@@ -36,6 +36,9 @@ true
 # f: Initial reference GW frequency in Hz (only used if p/M is set negative, i.e. unspecified); takes double
 2.e-3
 
+# T_fit: Duration of local fit in seconds (only used by AAK_Waveform); takes double
+1.2e6
+
 
 # INTRINSIC PARAMETERS
 

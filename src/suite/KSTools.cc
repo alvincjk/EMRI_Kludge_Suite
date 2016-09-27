@@ -27,7 +27,7 @@ int LoadSetPar(SetPar *par,const char *filename){
 
   char str_par[100];
   bool bool_par[4];
-  double num_par[18];
+  double num_par[19];
 
   ifstream file(filename);
   string line;
@@ -54,7 +54,7 @@ int LoadSetPar(SetPar *par,const char *filename){
         }
         bool_count++;
       }
-      else if(num_count<18){
+      else if(num_count<19){
         line_stream>>num_par[num_count];
 //        fprintf(stderr,"%f\n",num_par[num_count]);
         if(line_stream.fail()){
@@ -69,7 +69,7 @@ int LoadSetPar(SetPar *par,const char *filename){
       }
     }
   }
-  if(str_count+bool_count+num_count<23){
+  if(str_count+bool_count+num_count<24){
     fprintf(stderr,"Parsing error: Too few entries in settings/parameters file\n");
     return 0;
   }
@@ -86,21 +86,22 @@ int LoadSetPar(SetPar *par,const char *filename){
   par->p=num_par[2];
   par->T=num_par[3];
   par->f=num_par[4];
+  par->T_fit=num_par[5];
 
-  par->mu=num_par[5];
-  par->M=num_par[6];
-  par->s=num_par[7];
-  par->e=num_par[8];
-  par->iota=num_par[9];
-  par->gamma=num_par[10];
-  par->psi=num_par[11];
+  par->mu=num_par[6];
+  par->M=num_par[7];
+  par->s=num_par[8];
+  par->e=num_par[9];
+  par->iota=num_par[10];
+  par->gamma=num_par[11];
+  par->psi=num_par[12];
 
-  par->theta_S=num_par[12];
-  par->phi_S=num_par[13];
-  par->theta_K=num_par[14];
-  par->phi_K=num_par[15];
-  par->alpha=num_par[16];
-  par->D=num_par[17];
+  par->theta_S=num_par[13];
+  par->phi_S=num_par[14];
+  par->theta_K=num_par[15];
+  par->phi_K=num_par[16];
+  par->alpha=num_par[17];
+  par->D=num_par[18];
 
   if(par->dt<0) par->dt=par->T*31536000./par->length;
   if(par->p<0) par->p=(1.-par->e*par->e)/pow(M_PI*par->M*SOLARMASSINSEC*par->f,2./3.);

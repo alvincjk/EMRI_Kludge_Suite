@@ -25,12 +25,12 @@ double J1(double x);
 double Jn(int n, double x);
 
 void PNevolution(int vlength, double timestep, double *par, double v_map[], double *gimdotvec, double *e, double *nu, double *Phi,
-		 double *gim, double *alp, double *v, double *M, double *S, double e_traj[], double M_map[], double S_map[], double dt_map);
+		 double *gim, double *alp, double *v, double *M, double *S, double e_traj[], double M_map[], double S_map[], double dt_map[], int steps);
 
 void waveform(double tend,double *par, double v_map[], int vlength, double timestep, double *hI, double *hII, int nmodes, double zeta, double e_traj[],
-	      double M_phys, double M_map[], double S_map[], double dt_map, bool mich, bool traj);
+	      double M_phys, double M_map[], double S_map[], double dt_map[], int steps, bool mich, bool traj);
 
 void GenBCWave(double *hI, double *hII, double deltat, int vlength, double e_traj[], double v_map[], double M_phys, double M_map[], double mu, double S_map[], double dist, double inc, double gam0, double Phi0,
-	       double qS, double phiS, double alp0, double qK, double phiK, double dt_map, bool mich, bool traj);
+	       double qS, double phiS, double alp0, double qK, double phiK, double dt_map[], int steps, bool mich, bool traj);
 
 #endif

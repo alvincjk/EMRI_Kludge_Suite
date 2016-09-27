@@ -13,6 +13,8 @@
 #include <gsl/gsl_blas.h>
 #define C (299792458.)
 #include <gsl/gsl_multiroots.h>
+#include <gsl/gsl_spline.h>
+#include <gsl/gsl_multifit.h>
 
 #define EulerGamma (0.5772156649015329)
 #define PI2 (9.86960440109)
@@ -52,6 +54,10 @@ void print_state(size_t i, gsl_multiroot_fsolver *sol);
 void ParMap(double map[],double Omega[],double p,double M,double s,double e,double iota);
 
 void ParInvMap(double map[],double Omega[],double p,double M,double s,double e,double iota);
+
+void Interp(double *x_in,double *y_in,double *x_out,double *y_out,int n);
+
+void PolyFit(double *coeff,double *x,double *y,int n);
 
 #endif
 

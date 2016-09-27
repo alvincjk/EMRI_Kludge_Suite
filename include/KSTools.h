@@ -34,6 +34,7 @@ struct SetPar {
   double p; // initial semi-latus rectum in M
   double T; // waveform duration in years
   double f; // initial GW reference frequency in Hz
+  double T_fit; // duration of local fit in seconds
 
   double mu; // CO mass in solar masses
   double M; // BH mass in solar masses

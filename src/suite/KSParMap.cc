@@ -8,6 +8,8 @@
 #include <gsl/gsl_blas.h>
 #define C (299792458.)
 #include <gsl/gsl_multiroots.h>
+#include <gsl/gsl_spline.h>
+#include <gsl/gsl_multifit.h>
 
 #include "IEKG.h"
 #include "KSParMap.h"
@@ -476,5 +478,51 @@ void ParInvMap(double map[],double Omega[],double p,double M,double s,double e,d
 
 }
 
+void Interp(double *x_in,double *y_in,double *x_out,double *y_out,int n){
+
+  gsl_interp_accel *acc=gsl_interp_accel_alloc();
+  gsl_spline *spline=gsl_spline_alloc(gsl_interp_cspline,n);
+  gsl_spline_init(spline,x_in,y_in,n);
+
+  for(int i=0;i<n;i++) y_out[i]=gsl_spline_eval(spline,x_out[i],acc);
+
+  gsl_spline_free(spline);
+  gsl_interp_accel_free(acc);
+
+}
+
+void PolyFit(double *coeff,double *x,double *y,int n){
+
+  double chisq;
+  gsl_matrix *X,*cov;
+  gsl_vector *Y,*c;
+
+  X = gsl_matrix_alloc(n,4);
+  Y = gsl_vector_alloc(n);
+  c = gsl_vector_alloc(4);
+  cov = gsl_matrix_alloc(4,4);
+
+  for(int i=1;i<n;i++){
+    gsl_matrix_set(X,i,0,x[i]-x[0]);
+    gsl_matrix_set(X,i,1,pow(x[i]-x[0],2));
+    gsl_matrix_set(X,i,2,pow(x[i]-x[0],3));
+    gsl_matrix_set(X,i,3,pow(x[i]-x[0],4));
+    gsl_vector_set(Y,i,y[i]-y[0]);
+  }
+
+  gsl_multifit_linear_workspace *work=gsl_multifit_linear_alloc(n,4);
+  gsl_multifit_linear(X,Y,c,cov,&chisq,work);
+  gsl_multifit_linear_free(work);
+
+  for(int i=0;i<4;i++){
+    coeff[i]=gsl_vector_get(c,i);
+  }
+
+  gsl_matrix_free(X);
+  gsl_vector_free(Y);
+  gsl_vector_free(c);
+  gsl_matrix_free(cov);
+
+}
 
 

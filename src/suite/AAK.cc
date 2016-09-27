@@ -138,7 +138,7 @@ double Jn(int n, double x) {
    ************************************************************ */
 
 void PNevolution(int vlength, double timestep, double *par, double v_map[], double *gimdotvec, double *e, double *nu, double *Phi,
-		 double *gim, double *alp, double *v, double *M, double *S, double e_traj[], double M_map[], double S_map[], double dt_map) {
+		 double *gim, double *alp, double *v, double *M, double *S, double e_traj[], double M_map[], double S_map[], double dt_map[], int steps) {
   int i,i0;
   double tend;
   double gimdot;
@@ -211,6 +211,68 @@ void PNevolution(int vlength, double timestep, double *par, double v_map[], doub
   }
   // ----------
 
+  int points=steps;
+  while(timestep*vlength<dt_map[points-1]) points--;
+  int di=(int)(dt_map[points-1]/timestep/(points-1))+1;
+  if(points<4){fprintf(stderr,"Fitting error: Reduce duration of local fit\n"); exit(EXIT_FAILURE);}
+
+  double *t_in,*e_in,*v_in,*t_out,*e_out,*v_out,*e_coeff,*v_coeff,*M_coeff,*S_coeff;
+  t_in=(double*)malloc(points*sizeof(double));
+  e_in=(double*)malloc(points*sizeof(double));
+  v_in=(double*)malloc(points*sizeof(double));
+  t_out=(double*)malloc(points*sizeof(double));
+  e_out=(double*)malloc(points*sizeof(double));
+  v_out=(double*)malloc(points*sizeof(double));
+  e_coeff=(double*)malloc(4*sizeof(double));
+  v_coeff=(double*)malloc(4*sizeof(double));
+  M_coeff=(double*)malloc(4*sizeof(double));
+  S_coeff=(double*)malloc(4*sizeof(double));
+
+  for(i=0;i<points;i++){
+    t_in[i]=timestep*i*di;
+    e_in[i]=e[i*di];
+    v_in[i]=v[i*di];
+    t_out[i]=dt_map[i];
+  }
+  Interp(t_in,e_in,t_out,e_out,points);
+  Interp(t_in,v_in,t_out,v_out,points);
+
+  for(i=0;i<points;i++){
+    e_out[i]=e_traj[i]-e_out[i];
+    v_out[i]=v_map[i]-v_out[i];
+  }
+  PolyFit(e_coeff,t_out,e_out,points);
+  PolyFit(v_coeff,t_out,v_out,points);
+
+  for(i=0;i<=vlength;i++){
+    e[i]=e[i]+e_coeff[0]*timestep*(i-i0)+e_coeff[1]*timestep2*(i-i0)*(i-i0)+e_coeff[2]*timestep*timestep2*(i-i0)*(i-i0)*(i-i0)+e_coeff[3]*timestep2*timestep2*(i-i0)*(i-i0)*(i-i0)*(i-i0);
+    v[i]=v[i]+v_coeff[0]*timestep*(i-i0)+v_coeff[1]*timestep2*(i-i0)*(i-i0)+v_coeff[2]*timestep*timestep2*(i-i0)*(i-i0)*(i-i0)+v_coeff[3]*timestep2*timestep2*(i-i0)*(i-i0)*(i-i0)*(i-i0);
+  }
+  // ----------
+
+  // ----- evolve (M_map,S_map) -----
+  PolyFit(M_coeff,dt_map,M_map,points);
+  PolyFit(S_coeff,dt_map,S_map,points);
+
+  for(i=0;i<=vlength;i++){
+    M[i]=M0+(M_coeff[0]*timestep*(i-i0)+M_coeff[1]*timestep2*(i-i0)*(i-i0)+M_coeff[2]*timestep*timestep2*(i-i0)*(i-i0)*(i-i0)+M_coeff[3]*timestep2*timestep2*(i-i0)*(i-i0)*(i-i0)*(i-i0))*SOLARMASSINSEC;
+    S[i]=S0+S_coeff[0]*timestep*(i-i0)+S_coeff[1]*timestep2*(i-i0)*(i-i0)+S_coeff[2]*timestep*timestep2*(i-i0)*(i-i0)*(i-i0)+S_coeff[3]*timestep2*timestep2*(i-i0)*(i-i0)*(i-i0)*(i-i0);
+  }
+  // ----------
+
+  free(t_in);
+  free(e_in);
+  free(v_in);
+  free(t_out);
+  free(e_out);
+  free(v_out);
+  free(e_coeff);
+  free(v_coeff);
+  free(M_coeff);
+  free(S_coeff);
+
+/* OLD QUADRATIC FIT USING DERIVATIVES
+
   // ----- fit to (e_NK,v_map) -----
   edot0=dedt(v0,e0,coslam,mu,M0,S0);
   vdot0=dvdt(v0,e0,coslam,mu,M0,S0);
@@ -234,6 +296,8 @@ void PNevolution(int vlength, double timestep, double *par, double v_map[], doub
     S[i]=S0+S1*timestep*(i-i0)+S2*timestep2*(i-i0)*(i-i0);
   }
   // ----------
+
+*/
 
   Phi[i0]=Phi0;
   gim[i0]=gim0;
@@ -298,7 +362,7 @@ void PNevolution(int vlength, double timestep, double *par, double v_map[], doub
    ************************************************************ */
 
 void waveform(double tend,double *par, double v_map[], int vlength, double timestep, double *hI, double *hII, int nmodes, double zeta, double e_traj[],
-	      double M_phys, double M_map[], double S_map[], double dt_map, bool mich, bool traj) {
+	      double M_phys, double M_map[], double S_map[], double dt_map[], int steps, bool mich, bool traj) {
   int i,i0,n;
   double t0,mu,M,qS,phiS,lam,S,qK,phiK,Sn;
   double year,fn,invsqrtS[modes+1];
@@ -352,7 +416,7 @@ void waveform(double tend,double *par, double v_map[], int vlength, double times
   cosphiK=cos(phiK);
   sinphiK=sin(phiK);
 
-  PNevolution(vlength,timestep,par,v_map,gimdotvec,evec,nuvec,Phivec,gimvec,alpvec,vvec,Mvec,Svec,e_traj,M_map,S_map,dt_map);
+  PNevolution(vlength,timestep,par,v_map,gimdotvec,evec,nuvec,Phivec,gimvec,alpvec,vvec,Mvec,Svec,e_traj,M_map,S_map,dt_map,steps);
 
   // ----- output trajectory -----
   if(traj==true){
@@ -396,6 +460,7 @@ void waveform(double tend,double *par, double v_map[], int vlength, double times
     gim=gimvec[i];
     alp=alpvec[i];
     M=Mvec[i];
+    S=Svec[i];
     cosalp=cos(alp);
     sinalp=sin(alp);
 
@@ -521,6 +586,7 @@ void waveform(double tend,double *par, double v_map[], int vlength, double times
     gim=gimvec[i];
     alp=alpvec[i];
     M=Mvec[i];
+    S=Svec[i];
     cosalp=cos(alp);
     sinalp=sin(alp);
 
@@ -610,7 +676,7 @@ void waveform(double tend,double *par, double v_map[], int vlength, double times
 
 
 void GenBCWave(double *hI, double *hII, double deltat, int vlength, double e_traj[], double v_map[], double M_phys, double M_map[], double mu, double S_map[], double dist, double inc, double gam0, double Phi0,
-	       double qS, double phiS, double alp0, double qK, double phiK, double dt_map, bool mich, bool traj) {
+	       double qS, double phiS, double alp0, double qK, double phiK, double dt_map[], int steps, bool mich, bool traj) {
   int i,n,nmodes,p,pp,m,k,iv;
   int dim,direction,comp,pointM,pointe0;
   int timestep1,nsteps1;
@@ -673,7 +739,7 @@ void GenBCWave(double *hI, double *hII, double deltat, int vlength, double e_tra
      CALCULATING WAVEFORM & DERIVATIVES
      -------------------------------------------------------------- */
 
-  waveform(tend,par,v_map,vlength,deltat,hI,hII,nmodes,zeta,e_traj,M_phys,M_map,S_map,dt_map,mich,traj);
+  waveform(tend,par,v_map,vlength,deltat,hI,hII,nmodes,zeta,e_traj,M_phys,M_map,S_map,dt_map,steps,mich,traj);
   return;
 }
 
