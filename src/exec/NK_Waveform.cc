@@ -58,7 +58,26 @@ int main(int argc, char *argv[]){
   if(CheckFile(filename)==1) fprintf(stderr,"Output warning: Overwriting %s\n",filename);
   file=fopen(filename,"w");
   double t=0.;
+  int nancount=0;
   for(int i=0;i<NK.length;i++){
+    // ----- check for and fix isolated NaNs -----
+    if(isnan(hI[i])){
+      nancount++;
+      fprintf(stderr,"Waveform warning: NaN found, fixing\n");
+      hI[i]=(hI[max(i-1,0)]+hI[min(i+1,NK.length-1)])/2.;
+      if(isnan(hI[i])) hI[i]=0.;
+    }
+    if(isnan(hII[i])){
+      nancount++;
+      fprintf(stderr,"Waveform warning: NaN found, fixing\n");
+      hII[i]=(hII[max(i-1,0)]+hII[min(i+1,NK.length-1)])/2.;
+      if(isnan(hII[i])) hII[i]=0.;
+    }
+    if(nancount>10){
+      fprintf(stderr,"Waveform error: Too many NaNs found, stopping\n");
+      return 0;
+    }
+    // ----------
     fprintf(file,"%8.6e %14.12e %14.12e\n",t,hI[i],hII[i]);
     t+=NK.dt;
   }
@@ -68,7 +87,7 @@ int main(int argc, char *argv[]){
     GKTraj gktraj(cos(NK.iota),NK.s);
     gktraj.p=NK.p;
     gktraj.ecc=NK.e;
-    int maxsteps=(int)(NK.length*NK.dt*NK.mu/SOLARMASSINSEC/NK.M/NK.M/0.001);
+    int maxsteps=(int)(NK.length*NK.dt*NK.mu/SOLARMASSINSEC/NK.M/NK.M/0.001)+50000;
     int steps=0;
     TrajData *trajdata;
     trajdata=(TrajData*)malloc((size_t)((maxsteps+1)*sizeof(TrajData)));

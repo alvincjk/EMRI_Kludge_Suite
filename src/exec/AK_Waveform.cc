@@ -72,13 +72,13 @@ int main(int argc, char *argv[]){
     if(CheckFile(filename)==1) fprintf(stderr,"Output warning: Overwriting %s\n",filename);
     file=fopen(filename,"w");
     t=0.;
-    double RRdt=0.001,RRt=0.; // radiation-reaction timestep for downsampling
+    double dt_RR=0.001; // radiation-reaction timestep for downsampling
+    int i_RR=(int)(dt_RR*(SOLARMASSINSEC*AK.M*AK.M/AK.mu)/AK.dt);
     for(int i=0;i<AK.length;i++){
-      if(t*AK.mu/AK.M/AK.M/SOLARMASSINSEC>=RRt){
+      if(i%i_RR==0 || i+i_RR>=AK.length){
         double p_t=(1.-evec[i]*evec[i])/pow(2.*M_PI*AK.M*SOLARMASSINSEC*nuvec[i],2./3.);
         IEKG geodesic_t(p_t,evec[i],cos(AK.iota),AK.s);
         fprintf(file,"%8.6e %14.12e %14.12e %14.12e %14.12e %14.12e %14.12e\n",t,p_t,evec[i],AK.iota,geodesic_t.E,geodesic_t.Lz,geodesic_t.Q);
-        RRt+=RRdt;
       }
       t+=AK.dt;
     }

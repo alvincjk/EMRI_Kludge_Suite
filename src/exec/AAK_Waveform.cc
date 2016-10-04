@@ -62,7 +62,7 @@ int main(int argc, char *argv[]){
   double *hI,*hII;
   hI=(double*)fftw_malloc(AAK.length*sizeof(double));
   hII=(double*)fftw_malloc(AAK.length*sizeof(double));
-  GenBCWave(hI,hII,AAK.dt,AAK.length,e_traj,v_map,AAK.M,M_map,AAK.mu,s_map,AAK.D,AAK.iota,AAK.gamma,Phi,AAK.theta_S,AAK.phi_S,AAK.alpha,AAK.theta_K,AAK.phi_K,dt_map,steps,AAK.LISA,false);
+  GenBCWave(hI,hII,AAK.dt,AAK.length,e_traj,v_map,AAK.M,M_map,AAK.mu,AAK.s,s_map,AAK.D,AAK.iota,AAK.gamma,Phi,AAK.theta_S,AAK.phi_S,AAK.alpha,AAK.theta_K,AAK.phi_K,dt_map,steps,AAK.LISA,false);
 
   ticks=clock()-ticks;
   double secs=((double)ticks)/CLOCKS_PER_SEC;
@@ -86,18 +86,20 @@ int main(int argc, char *argv[]){
     double *pvec,*evec;
     pvec=(double*)malloc(AAK.length*sizeof(double));
     evec=(double*)malloc(AAK.length*sizeof(double));
-    GenBCWave(pvec,evec,AAK.dt,AAK.length,e_traj,v_map,AAK.M,M_map,AAK.mu,s_map,AAK.D,AAK.iota,AAK.gamma,Phi,AAK.theta_S,AAK.phi_S,AAK.alpha,AAK.theta_K,AAK.phi_K,dt_map,steps,AAK.LISA,true);
+    GenBCWave(pvec,evec,AAK.dt,AAK.length,e_traj,v_map,AAK.M,M_map,AAK.mu,AAK.s,s_map,AAK.D,AAK.iota,AAK.gamma,Phi,AAK.theta_S,AAK.phi_S,AAK.alpha,AAK.theta_K,AAK.phi_K,dt_map,steps,AAK.LISA,true);
     strcpy(filename,AAK.path);
     strcat(filename,"_traj.dat");
     if(CheckFile(filename)==1) fprintf(stderr,"Output warning: Overwriting %s\n",filename);
     file=fopen(filename,"w");
     t=0.;
-    double RRdt=0.001,RRt=0.; // radiation-reaction timestep for downsampling
-    for(int i=0;i<AAK.length;i++){
-      if(t*AAK.mu/AAK.M/AAK.M/SOLARMASSINSEC>=RRt){
+    double dt_RR=0.001; // radiation-reaction timestep for downsampling
+    int i_RR=(int)(dt_RR*(SOLARMASSINSEC*AAK.M*AAK.M/AAK.mu)/AAK.dt);
+    int i_max=0;
+    while(pvec[i_max]>0.) i_max++;
+    for(int i=0;i<i_max;i++){
+      if(i%i_RR==0 || i+i_RR>=i_max){
         IEKG geodesic_t(pvec[i],evec[i],cos(AAK.iota),AAK.s);
         fprintf(file,"%8.6e %14.12e %14.12e %14.12e %14.12e %14.12e %14.12e\n",t,pvec[i],evec[i],AAK.iota,geodesic_t.E,geodesic_t.Lz,geodesic_t.Q);
-        RRt+=RRdt;
       }
       t+=AAK.dt;
     }
