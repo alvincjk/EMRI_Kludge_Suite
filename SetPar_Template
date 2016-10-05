@@ -25,7 +25,7 @@ true
 1000000
 
 # dt: Time step in seconds; takes double
-31.5
+10.
 
 # p/M: Initial semi-latus rectum; takes double
 9.
@@ -36,8 +36,8 @@ true
 # f: Initial reference GW frequency in Hz (only used if p/M is set negative, i.e. unspecified); takes double
 2.e-3
 
-# T_fit: Duration of local fit in seconds (only used by AAK_Waveform); takes double
-1.2e6
+# T_fit: Duration of local fit in radiation-reaction time steps M^2/mu (only used by AAK_Waveform); takes double
+10.
 
 
 # INTRINSIC PARAMETERS

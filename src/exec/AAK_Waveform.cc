@@ -38,7 +38,7 @@ int main(int argc, char *argv[]){
   gktraj3.ecc=AAK.e;
   int maxsteps=10;
   int steps=0;
-  double dt_fit=AAK.T_fit/(SOLARMASSINSEC*AAK.M*AAK.M/AAK.mu)/(maxsteps-1);
+  double dt_fit=AAK.T_fit/(maxsteps-1);
   TrajData *traj3;
   traj3=(TrajData*)malloc((size_t)((maxsteps+1)*sizeof(TrajData)));
   gktraj3.Eccentric(dt_fit,traj3,maxsteps,steps);
@@ -93,7 +93,7 @@ int main(int argc, char *argv[]){
     file=fopen(filename,"w");
     t=0.;
     double dt_RR=0.001; // radiation-reaction timestep for downsampling
-    int i_RR=(int)(dt_RR*(SOLARMASSINSEC*AAK.M*AAK.M/AAK.mu)/AAK.dt);
+    int i_RR=(int)(dt_RR*(SOLARMASSINSEC*AAK.M*AAK.M/AAK.mu)/AAK.dt)+1;
     int i_max=0;
     while(pvec[i_max]>0.) i_max++;
     for(int i=0;i<i_max;i++){

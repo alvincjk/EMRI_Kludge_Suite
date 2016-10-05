@@ -25,7 +25,7 @@ double J1(double x);
 double Jn(int n, double x);
 
 void PNevolution(int vlength, double timestep, double *par, double v_map[], double *gimdotvec, double *e, double *nu, double *Phi,
-		 double *gim, double *alp, double *v, double *M, double *S, double e_traj[], double M_map[], double S_map[], double dt_map[], int steps);
+		 double *gim, double *alp, double *v, double *M, double *S, double e_traj[], double M_phys, double M_map[], double S_phys, double S_map[], double dt_map[], int steps, int *i_max);
 
 void waveform(double tend,double *par, double v_map[], int vlength, double timestep, double *hI, double *hII, int nmodes, double zeta, double e_traj[],
 	      double M_phys, double M_map[], double S_phys, double S_map[], double dt_map[], int steps, bool mich, bool traj);

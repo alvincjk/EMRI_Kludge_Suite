@@ -497,20 +497,20 @@ void PolyFit(double *coeff,double *x,double *y,int n){
   gsl_matrix *X,*cov;
   gsl_vector *Y,*c;
 
-  X = gsl_matrix_alloc(n,4);
-  Y = gsl_vector_alloc(n);
+  X = gsl_matrix_alloc(n-1,4);
+  Y = gsl_vector_alloc(n-1);
   c = gsl_vector_alloc(4);
   cov = gsl_matrix_alloc(4,4);
 
-  for(int i=1;i<n;i++){
-    gsl_matrix_set(X,i,0,x[i]-x[0]);
-    gsl_matrix_set(X,i,1,pow(x[i]-x[0],2));
-    gsl_matrix_set(X,i,2,pow(x[i]-x[0],3));
-    gsl_matrix_set(X,i,3,pow(x[i]-x[0],4));
-    gsl_vector_set(Y,i,y[i]-y[0]);
+  for(int i=0;i<n-1;i++){
+    gsl_matrix_set(X,i,0,x[i+1]-x[0]);
+    gsl_matrix_set(X,i,1,pow(x[i+1]-x[0],2));
+    gsl_matrix_set(X,i,2,pow(x[i+1]-x[0],3));
+    gsl_matrix_set(X,i,3,pow(x[i+1]-x[0],4));
+    gsl_vector_set(Y,i,y[i+1]-y[0]);
   }
 
-  gsl_multifit_linear_workspace *work=gsl_multifit_linear_alloc(n,4);
+  gsl_multifit_linear_workspace *work=gsl_multifit_linear_alloc(n-1,4);
   gsl_multifit_linear(X,Y,c,cov,&chisq,work);
   gsl_multifit_linear_free(work);
 

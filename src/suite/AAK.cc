@@ -139,7 +139,7 @@ double Jn(int n, double x) {
    ************************************************************ */
 
 void PNevolution(int vlength, double timestep, double *par, double v_map[], double *gimdotvec, double *e, double *nu, double *Phi,
-		 double *gim, double *alp, double *v, double *M, double *S, double e_traj[], double M_map[], double S_map[], double dt_map[], int steps) {
+		 double *gim, double *alp, double *v, double *M, double *S, double e_traj[], double M_phys, double M_map[], double S_phys, double S_map[], double dt_map[], int steps, int *i_max) {
   int i,i0;
   double tend;
   double gimdot;
@@ -197,6 +197,11 @@ void PNevolution(int vlength, double timestep, double *par, double v_map[], doub
     }
     e[i+1]=e[i]+(1.5*edot-.5*edotm)*timestep;
     v[i+1]=v[i]+(1.5*vdot-.5*vdotm)*timestep;
+    if(e[i+1]<0.){
+      if(*i_max==vlength) *i_max=i;
+      e[i+1]=e[*i_max];
+      v[i+1]=v[*i_max];
+    }
   }
   for(i=i0;i>0;i--){
     edotp=edot;
@@ -212,10 +217,12 @@ void PNevolution(int vlength, double timestep, double *par, double v_map[], doub
   }
   // ----------
 
+  // ----- fit to (e_NK,v_map) -----
+  int i_neg=*i_max;
   int points=steps;
-  while(timestep*vlength<dt_map[points-1]) points--;
+  while(timestep*i_neg<dt_map[points-1]) points--;
   int di=(int)(dt_map[points-1]/timestep/(points-1))+1;
-  if(points<4){fprintf(stderr,"Fitting error: Reduce duration of local fit\n"); exit(EXIT_FAILURE);}
+  if(points<5){fprintf(stderr,"Fitting error: Reduce duration of local fit\n"); exit(EXIT_FAILURE);}
 
   double *t_in,*e_in,*v_in,*t_out,*e_out,*v_out,*e_coeff,*v_coeff,*M_coeff,*S_coeff;
   t_in=(double*)malloc(points*sizeof(double));
@@ -248,8 +255,17 @@ void PNevolution(int vlength, double timestep, double *par, double v_map[], doub
   for(i=0;i<=vlength;i++){
     e[i]=e[i]+e_coeff[0]*timestep*(i-i0)+e_coeff[1]*timestep2*(i-i0)*(i-i0)+e_coeff[2]*timestep*timestep2*(i-i0)*(i-i0)*(i-i0)+e_coeff[3]*timestep2*timestep2*(i-i0)*(i-i0)*(i-i0)*(i-i0);
     v[i]=v[i]+v_coeff[0]*timestep*(i-i0)+v_coeff[1]*timestep2*(i-i0)*(i-i0)+v_coeff[2]*timestep*timestep2*(i-i0)*(i-i0)*(i-i0)+v_coeff[3]*timestep2*timestep2*(i-i0)*(i-i0)*(i-i0)*(i-i0);
-    if(e[i]<0.) e[i]=0.;
+    if(i>*i_max){
+      e[i]=e[*i_max];
+      v[i]=v[*i_max];
+    }
+    else if(e[i]<0.){
+      *i_max=i-1;
+      e[i]=e[*i_max];
+      v[i]=v[*i_max];
+    }
   }
+  i_neg=*i_max;
   // ----------
 
   // ----- evolve (M_map,S_map) -----
@@ -259,6 +275,40 @@ void PNevolution(int vlength, double timestep, double *par, double v_map[], doub
   for(i=0;i<=vlength;i++){
     M[i]=M0+(M_coeff[0]*timestep*(i-i0)+M_coeff[1]*timestep2*(i-i0)*(i-i0)+M_coeff[2]*timestep*timestep2*(i-i0)*(i-i0)*(i-i0)+M_coeff[3]*timestep2*timestep2*(i-i0)*(i-i0)*(i-i0)*(i-i0))*SOLARMASSINSEC;
     S[i]=S0+S_coeff[0]*timestep*(i-i0)+S_coeff[1]*timestep2*(i-i0)*(i-i0)+S_coeff[2]*timestep*timestep2*(i-i0)*(i-i0)*(i-i0)+S_coeff[3]*timestep2*timestep2*(i-i0)*(i-i0)*(i-i0)*(i-i0);
+  }
+  // ----------
+
+  // ----- check for plunge -----
+  int i_min=0;
+  int i_RR=(int)((SOLARMASSINSEC*M_phys*SOLARMASSINSEC*M_phys/mu)/timestep)+1;
+  double z1=1.+pow(1.-S_phys*S_phys,1./3.)*(pow(1.+S_phys,1./3.)+pow(1.-S_phys,1./3.));
+  double z2=sqrt(3.*S_phys*S_phys+z1*z1);
+  double LSO_min=3.+z2-sqrt((3.-z1)*(3.+z1+2.*z2));
+  double LSO_max=3.+z2+sqrt((3.-z1)*(3.+z1+2.*z2));
+
+  for(i=i0;i<=vlength;i++){
+    if(i>*i_max) break;
+    if((1.-e[i]*e[i])*pow(dphidm(v[i],e[i],coslam,S[i])/dtdm(v[i],e[i],coslam,S[i])/M[i]*M_phys*SOLARMASSINSEC,-2./3.)<LSO_min && *i_max==i_neg){
+      i_min=max(i-i_RR,0);
+      int i_buffer=(int)(10./(dphidm(v[i],e[i],coslam,S[i])/dtdm(v[i],e[i],coslam,S[i])/2./M_PI/M[i])/timestep)+1; // 10 extra orbits
+      *i_max=min(i+i_buffer,i_neg);
+    }
+    if(i>i0 && (i-i0)%i_RR==0 && (1.-e[i]*e[i])*pow(dphidm(v[i],e[i],coslam,S[i])/dtdm(v[i],e[i],coslam,S[i])/M[i]*M_phys*SOLARMASSINSEC,-2./3.)<LSO_max && *i_max==i_neg){
+      i_min=max(i-i_RR,0);
+      IEKG iekg((1.-e[i]*e[i])*pow(dphidm(v[i],e[i],coslam,S[i])/dtdm(v[i],e[i],coslam,S[i])/M[i]*M_phys*SOLARMASSINSEC,-2./3.),e[i],coslam,S_phys);
+      if(iekg.Stable==-1){
+        int i_buffer=(int)(10./(dphidm(v[i],e[i],coslam,S[i])/dtdm(v[i],e[i],coslam,S[i])/2./M_PI/M[i])/timestep)+1; // 10 extra orbits
+        *i_max=min(i+i_buffer,i_neg);
+      }
+    }
+    if(e[i]>e[max(i0,i-1)] || v[i]<v[max(i0,i-1)]){fprintf(stderr,"Fitting error: Adjust duration of local fit\n"); exit(EXIT_FAILURE);}
+  }
+
+  while(*i_max-i_min>1){
+    int i_mid=(*i_max+i_min)/2;
+    IEKG iekg((1.-e[i_mid]*e[i_mid])*pow(dphidm(v[i_mid],e[i_mid],coslam,S[i_mid])/dtdm(v[i_mid],e[i_mid],coslam,S[i_mid])/M[i_mid]*M_phys*SOLARMASSINSEC,-2./3.),e[i_mid],coslam,S_phys);
+    if(iekg.Stable==-1) *i_max=i_mid;
+    else i_min=i_mid;
   }
   // ----------
 
@@ -273,7 +323,8 @@ void PNevolution(int vlength, double timestep, double *par, double v_map[], doub
   free(M_coeff);
   free(S_coeff);
 
-/* OLD QUADRATIC FIT USING DERIVATIVES
+/*
+  // OLD QUADRATIC FIT USING DERIVATIVES (NOW DEFUNCT)
 
   // ----- fit to (e_NK,v_map) -----
   edot0=dedt(v0,e0,coslam,mu,M0,S0);
@@ -298,7 +349,6 @@ void PNevolution(int vlength, double timestep, double *par, double v_map[], doub
     S[i]=S0+S1*timestep*(i-i0)+S2*timestep2*(i-i0)*(i-i0);
   }
   // ----------
-
 */
 
   Phi[i0]=Phi0;
@@ -418,63 +468,36 @@ void waveform(double tend,double *par, double v_map[], int vlength, double times
   cosphiK=cos(phiK);
   sinphiK=sin(phiK);
 
-  PNevolution(vlength,timestep,par,v_map,gimdotvec,evec,nuvec,Phivec,gimvec,alpvec,vvec,Mvec,Svec,e_traj,M_map,S_map,dt_map,steps);
-
-  int i_min=0,i_max=vlength;
-  int i_RR=(int)((SOLARMASSINSEC*M_phys*SOLARMASSINSEC*M_phys/mu)/timestep);
-  double z1=1.+pow(1.-S_phys*S_phys,1./3.)*(pow(1.+S_phys,1./3.)+pow(1.-S_phys,1./3.));
-  double z2=sqrt(3.*S_phys*S_phys+z1*z1);
-  double LSO_min=3.+z2-sqrt((3.-z1)*(3.+z1+2.*z2));
-  double LSO_max=3.+z2+sqrt((3.-z1)*(3.+z1+2.*z2));
+  int *i_max=(int*)malloc(sizeof(int));
+  *i_max=vlength;
+  PNevolution(vlength,timestep,par,v_map,gimdotvec,evec,nuvec,Phivec,gimvec,alpvec,vvec,Mvec,Svec,e_traj,M_phys,M_map,S_phys,S_map,dt_map,steps,i_max);
+  int i_buffer=(int)(10./(dphidm(vvec[*i_max],evec[*i_max],coslam,Svec[*i_max])/dtdm(vvec[*i_max],evec[*i_max],coslam,Svec[*i_max])/2./M_PI/Mvec[*i_max])/timestep)+1; // 10 orbits after LSO
 
   // ----- output trajectory -----
   if(traj==true){
-
-    for(i=0;i<=vlength;i++){
-
+    for(i=0;i<*i_max;i++){
       e=evec[i];
       v=vvec[i];
       M=Mvec[i];
       S=Svec[i];
+      hI[i]=(1.-e*e)*pow(dphidm(v,e,coslam,S)/dtdm(v,e,coslam,S)/M*M_phys*SOLARMASSINSEC,-2./3.);
+      hII[i]=e;
+/*
+      // ACCURATE RECOVERY OF P FROM UNPHYSICAL TRAJECTORY (SLOW AND MAY BREAK NEAR PLUNGE, NOT USED TO TEST FOR STABILITY)
 
       double Omega_map[3],inv_map[3];
       Omega_map[0]=drdm(v,e,coslam,S)/dtdm(v,e,coslam,S)/2./M_PI;
       Omega_map[1]=dthetadm(v,e,coslam,S)/dtdm(v,e,coslam,S)/2./M_PI;
       Omega_map[2]=dphidm(v,e,coslam,S)/dtdm(v,e,coslam,S)/2./M_PI;
       ParInvMap(inv_map,Omega_map,1./v/v,M/SOLARMASSINSEC,S,e,lam);
-      hI[i]=1./inv_map[0]/inv_map[0]; // this is the most accurate recovery of p from the unphysical trajectory, not the one used to test for stability
-//      hI[i]=(1.-e*e)*pow(dphidm(v,e,coslam,S)/dtdm(v,e,coslam,S)/M*M_phys*SOLARMASSINSEC,-2./3.);
+      hI[i]=1./inv_map[0]/inv_map[0];
       hII[i]=e;
-
-      if(i==i_max) break;
-      if((1.-e*e)*pow(dphidm(v,e,coslam,S)/dtdm(v,e,coslam,S)/M*M_phys*SOLARMASSINSEC,-2./3.)<LSO_min && i_max==vlength){
-        i_min=max(i-i_RR,0);
-        int i_buffer=(int)(20./(dphidm(v,e,coslam,S)/dtdm(v,e,coslam,S)/2./M_PI/M)/timestep); // 20 extra orbits
-        i_max=min(i+i_buffer,vlength);
-      }
-      if(i>i0 && (i-i0)%i_RR==0 && (1.-e*e)*pow(dphidm(v,e,coslam,S)/dtdm(v,e,coslam,S)/M*M_phys*SOLARMASSINSEC,-2./3.)<LSO_max && i_max==vlength){
-        i_min=max(i-i_RR,0);
-        IEKG iekg((1.-e*e)*pow(dphidm(v,e,coslam,S)/dtdm(v,e,coslam,S)/M*M_phys*SOLARMASSINSEC,-2./3.),e,coslam,S_phys);
-        if(iekg.Stable==-1){
-          int i_buffer=(int)(20./(dphidm(v,e,coslam,S)/dtdm(v,e,coslam,S)/2./M_PI/M)/timestep); // 20 extra orbits
-          i_max=min(i+i_buffer,vlength);
-        }
-      }
-
+*/
     }
-
-    while(i_max-i_min>1){
-      int i_mid=(i_max+i_min)/2;
-      IEKG iekg((1.-evec[i_mid]*evec[i_mid])*pow(dphidm(vvec[i_mid],evec[i_mid],coslam,Svec[i_mid])/dtdm(vvec[i_mid],evec[i_mid],coslam,Svec[i_mid])/Mvec[i_mid]*M_phys*SOLARMASSINSEC,-2./3.),evec[i_mid],coslam,S_phys);
-      if(iekg.Stable==-1) i_max=i_mid;
-      else i_min=i_mid;
-    }
-
-    for(i=i_max;i<=vlength;i++){
+    for(i=*i_max;i<=vlength;i++){
       hI[i]=-1.;
       hII[i]=-1.;
     }
-
     free(evec);
     free(nuvec);
     free(alpvec);
@@ -484,8 +507,8 @@ void waveform(double tend,double *par, double v_map[], int vlength, double times
     free(vvec);
     free(Mvec);
     free(Svec);
+    free(i_max);
     return;
-
   }
   // ----------
 
@@ -584,24 +607,24 @@ void waveform(double tend,double *par, double v_map[], int vlength, double times
       hII[i]=hII[i]+hnII;
     }
 
-    if(i==i_max) break;
-
-    if((1.-e*e)*pow(dphidm(v,e,coslam,S)/dtdm(v,e,coslam,S)/M*M_phys*SOLARMASSINSEC,-2./3.)<LSO_min && i_max==vlength){
-      i_min=max(i-i_RR,0);
-      int i_buffer=(int)(20./(dphidm(v,e,coslam,S)/dtdm(v,e,coslam,S)/2./M_PI/M)/timestep); // 20 extra orbits
-      i_max=min(i+i_buffer,vlength);
-    }
-
-    if(i>i0 && (i-i0)%i_RR==0 && (1.-e*e)*pow(dphidm(v,e,coslam,S)/dtdm(v,e,coslam,S)/M*M_phys*SOLARMASSINSEC,-2./3.)<LSO_max && i_max==vlength){
-      i_min=max(i-i_RR,0);
-      IEKG iekg((1.-e*e)*pow(dphidm(v,e,coslam,S)/dtdm(v,e,coslam,S)/M*M_phys*SOLARMASSINSEC,-2./3.),e,coslam,S_phys);
-      if(iekg.Stable==-1){
-        int i_buffer=(int)(20./(dphidm(v,e,coslam,S)/dtdm(v,e,coslam,S)/2./M_PI/M)/timestep); // 20 extra orbits
-        i_max=min(i+i_buffer,vlength);
-      }
-    }
+    if(i==*i_max+i_buffer) break;
 
   }
+
+  // ----- Planck-taper window -----
+  double t_LSO=timestep*(*i_max);
+  double t_end=timestep*(*i_max+i_buffer);
+  for(i=*i_max+1;i<=vlength;i++){
+    if(i<*i_max+i_buffer){
+      hI[i]=hI[i]/(exp((t_LSO-t_end)/(timestep*i-t_LSO)+(t_LSO-t_end)/(timestep*i-t_end))+1.);
+      hII[i]=hII[i]/(exp((t_LSO-t_end)/(timestep*i-t_LSO)+(t_LSO-t_end)/(timestep*i-t_end))+1.);
+    }
+    else{
+      hI[i]=0.;
+      hII[i]=0.;
+    }
+  }
+  // ----------
 
   for(i=i0-1;i>=0;i--) {
 
@@ -694,26 +717,6 @@ void waveform(double tend,double *par, double v_map[], int vlength, double times
     }
   }
 
-  while(i_max-i_min>1){
-    int i_mid=(i_max+i_min)/2;
-    IEKG iekg((1.-evec[i_mid]*evec[i_mid])*pow(dphidm(vvec[i_mid],evec[i_mid],coslam,Svec[i_mid])/dtdm(vvec[i_mid],evec[i_mid],coslam,Svec[i_mid])/Mvec[i_mid]*M_phys*SOLARMASSINSEC,-2./3.),evec[i_mid],coslam,S_phys);
-    if(iekg.Stable==-1) i_max=i_mid;
-    else i_min=i_mid;
-  }
-
-  double t_LSO=timestep*(i_max-1);
-  double t_end=t_LSO+10./(dphidm(vvec[i_max],evec[i_max],coslam,Svec[i_max])/dtdm(vvec[i_max],evec[i_max],coslam,Svec[i_max])/2./M_PI/Mvec[i_max]); // 10 orbits after LSO
-  for(i=i_max;i<=vlength;i++){
-    if(timestep*i<t_end){
-      hI[i]=hI[i]/(exp((t_LSO-t_end)/(timestep*i-t_LSO)+(t_LSO-t_end)/(timestep*i-t_end))+1.);
-      hII[i]=hII[i]/(exp((t_LSO-t_end)/(timestep*i-t_LSO)+(t_LSO-t_end)/(timestep*i-t_end))+1.);
-    }
-    else{
-      hI[i]=0.;
-      hII[i]=0.;
-    }
-  }
-
   free(evec);
   free(nuvec);
   free(alpvec);
@@ -723,6 +726,7 @@ void waveform(double tend,double *par, double v_map[], int vlength, double times
   free(vvec);
   free(Mvec);
   free(Svec);
+  free(i_max);
   return;
 
 }

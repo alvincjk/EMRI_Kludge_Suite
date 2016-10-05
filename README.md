@@ -1,6 +1,6 @@
 # EMRI Kludge Suite
 
-**Version 0.1.2**
+**Version 0.1.3**
 
 This is a C/C++ suite that allows kludge waveforms for extreme-mass-ratio inspirals (EMRIs) to be generated with shared settings and parameters. The three waveforms included in the suite are the augmented analytic kludge (AAK) [1], the analytic kludge (AK) [2], and the numerical kludge (NK) [3].
 
@@ -22,7 +22,7 @@ will generate an AAK waveform with default settings and parameters. Three files 
 - `example_traj.dat` contains inspiral trajectory data (t, p/M, e, iota, E, L_z, Q)
 - `example_info.txt` contains additional information such as signal-to-noise ratio and waveform timing
 
-NEW IN VERSION 0.1.1: The AAK implementation now uses a 10-point quartic polynomial fit, which provides high overlaps with the NK over longer durations [4]. The time duration spanned by the fitting points may be specified by the new parameter T_fit (default value is two weeks).
+NEW IN VERSION 0.1.1: The AAK implementation now uses a 10-point quartic polynomial fit, which provides high overlaps with the NK over longer durations [4]. The time duration spanned by the fitting points may be specified by the new parameter T_fit (default value is 10 radiation-reaction time steps M^2/mu).
 
 NEW IN VERSION 0.1.2: A fast approximate calculation of the last stable orbit has been implemented for the AAK, allowing the waveform to automatically include plunge [4]. The trajectory file is truncated at the last stable orbit, while a one-sided Planck-taper window is used to zero the waveform smoothly over 10 additional orbits.
 
