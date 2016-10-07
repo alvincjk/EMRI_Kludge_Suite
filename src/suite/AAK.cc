@@ -197,7 +197,7 @@ void PNevolution(int vlength, double timestep, double *par, double v_map[], doub
     }
     e[i+1]=e[i]+(1.5*edot-.5*edotm)*timestep;
     v[i+1]=v[i]+(1.5*vdot-.5*vdotm)*timestep;
-    if(e[i+1]<0.){
+    if(e[i+1]<0. || isnan(e[i+1]) || isnan(v[i+1])){
       if(*i_max==vlength) *i_max=i;
       e[i+1]=e[*i_max];
       v[i+1]=v[*i_max];
@@ -275,6 +275,10 @@ void PNevolution(int vlength, double timestep, double *par, double v_map[], doub
   for(i=0;i<=vlength;i++){
     M[i]=M0+(M_coeff[0]*timestep*(i-i0)+M_coeff[1]*timestep2*(i-i0)*(i-i0)+M_coeff[2]*timestep*timestep2*(i-i0)*(i-i0)*(i-i0)+M_coeff[3]*timestep2*timestep2*(i-i0)*(i-i0)*(i-i0)*(i-i0))*SOLARMASSINSEC;
     S[i]=S0+S_coeff[0]*timestep*(i-i0)+S_coeff[1]*timestep2*(i-i0)*(i-i0)+S_coeff[2]*timestep*timestep2*(i-i0)*(i-i0)*(i-i0)+S_coeff[3]*timestep2*timestep2*(i-i0)*(i-i0)*(i-i0)*(i-i0);
+    if(i>i_neg){
+      M[i]=M[i_neg];
+      S[i]=S[i_neg];
+    }
   }
   // ----------
 
@@ -376,6 +380,11 @@ void PNevolution(int vlength, double timestep, double *par, double v_map[], doub
     Phi[i+1]=Phi[i]+(1.5*Phidot-.5*Phidotm)*timestep;
     gim[i+1]=gim[i]+(1.5*gimdot-.5*gimdotm)*timestep;
     alp[i+1]=alp[i]+(1.5*alpdot-.5*alpdotm)*timestep;
+    if(i>=i_neg){
+      Phi[i+1]=Phi[i_neg];
+      gim[i+1]=gim[i_neg];
+      alp[i+1]=alp[i_neg];
+    }
   }
   nu[vlength]=drdm(v[vlength],e[vlength],coslam,S[vlength])/dtdm(v[vlength],e[vlength],coslam,S[vlength])/(2.*M_PI*M[vlength]);
   gimdotvec[vlength]=(dthetadm(v[vlength],e[vlength],coslam,S[vlength])-drdm(v[vlength],e[vlength],coslam,S[vlength]))/dtdm(v[vlength],e[vlength],coslam,S[vlength])/M[vlength];
