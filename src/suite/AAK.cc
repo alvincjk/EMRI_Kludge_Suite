@@ -308,7 +308,7 @@ void PNevolution(int vlength, double timestep, double *par, double v_map[], doub
     if(i>i0 && (i-i0)%i_RR==0 && (1.-e[i]*e[i])*pow(OmegaPhi(v[i],e[i],coslam,S[i],M[i])*M_phys*SOLARMASSINSEC,-2./3.)<LSO_max && *i_max==i_neg){
       i_min=max(i-i_RR,0);
       IEKG iekg((1.-e[i]*e[i])*pow(OmegaPhi(v[i],e[i],coslam,S[i],M[i])*M_phys*SOLARMASSINSEC,-2./3.),e[i],coslam,S_phys);
-      if(iekg.Stable==-1){
+      if(iekg.Stable==-1 || iekg.E>1){
         int i_buffer=(int)(10./(OmegaPhi(v[i],e[i],coslam,S[i],M[i])/2./M_PI)/timestep)+1; // 10 extra orbits
         *i_max=min(i+i_buffer,i_neg);
       }
@@ -319,7 +319,7 @@ void PNevolution(int vlength, double timestep, double *par, double v_map[], doub
   while(*i_max-i_min>1){
     int i_mid=(*i_max+i_min)/2;
     IEKG iekg((1.-e[i_mid]*e[i_mid])*pow(OmegaPhi(v[i_mid],e[i_mid],coslam,S[i_mid],M[i_mid])*M_phys*SOLARMASSINSEC,-2./3.),e[i_mid],coslam,S_phys);
-    if(iekg.Stable==-1) *i_max=i_mid;
+    if(iekg.Stable==-1 || iekg.E>1) *i_max=i_mid;
     else i_min=i_mid;
   }
   // ----------

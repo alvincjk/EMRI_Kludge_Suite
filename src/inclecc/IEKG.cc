@@ -90,8 +90,9 @@ void IEKG::Constants()
   // algorithm I came up with on page 8 of my notes.
   //
   const Real semimaj = peri/(1. - ecc);
-  const Real Epro = Kerr::Eeqpro(semimaj, a);
+  Real Epro = Kerr::Eeqpro(semimaj, a);
   Real Eret = Kerr::Eeqret(semimaj, a);
+  if (isnan(Epro) || Epro > 1.-1.e-6) Epro = 1.-1.e-6;
   if (isnan(Eret) || Eret > 1.) Eret = 1.;
   const Real Eguess = 0.5*(cosiota + 1.)*Epro + 0.5*(1. - cosiota)*Eret;
   const Real Lzguess = cosiota*sqrt((1. - ecc)*(1. + ecc)/(2. - 2.*Eguess));
