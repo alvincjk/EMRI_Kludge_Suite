@@ -335,9 +335,17 @@ int sol_fun(const gsl_vector *x,void *p,gsl_vector *f){
   const double M_map=gsl_vector_get(x,1);
   const double s_map=gsl_vector_get(x,2);
 
-  const double Omega_r_map=drdm(v_map,e,cos(iota),s_map)/dtdm(v_map,e,cos(iota),s_map)/2./M_PI;
-  const double Omega_theta_map=dthetadm(v_map,e,cos(iota),s_map)/dtdm(v_map,e,cos(iota),s_map)/2./M_PI;
-  const double Omega_phi_map=dphidm(v_map,e,cos(iota),s_map)/dtdm(v_map,e,cos(iota),s_map)/2./M_PI;
+  double Omega_r_map,Omega_theta_map,Omega_phi_map;
+  if(cos(iota)>0){
+    Omega_r_map=drdm(v_map,e,cos(iota),s_map)/dtdm(v_map,e,cos(iota),s_map)/2./M_PI;
+    Omega_theta_map=dthetadm(v_map,e,cos(iota),s_map)/dtdm(v_map,e,cos(iota),s_map)/2./M_PI;
+    Omega_phi_map=dphidm(v_map,e,cos(iota),s_map)/dtdm(v_map,e,cos(iota),s_map)/2./M_PI;
+  }
+  else{
+    Omega_r_map=drdm(v_map,e,-cos(iota),-s_map)/dtdm(v_map,e,-cos(iota),-s_map)/2./M_PI;
+    Omega_theta_map=dthetadm(v_map,e,-cos(iota),-s_map)/dtdm(v_map,e,-cos(iota),-s_map)/2./M_PI;
+    Omega_phi_map=-dphidm(v_map,e,-cos(iota),-s_map)/dtdm(v_map,e,-cos(iota),-s_map)/2./M_PI;
+  }
 
   const double f0=Omega_r*M_map-Omega_r_map*M;
   const double f1=Omega_theta*M_map-Omega_theta_map*M;

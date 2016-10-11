@@ -133,6 +133,14 @@ double Jn(int n, double x) {
   return Jnval;
 }
 
+// ----- magnitude of azimuthal angular frequency for prograde/retrograde orbits -----
+double OmegaPhi(double v,double e,double cosiota,double s,double M){
+  double omegaphi;
+  if(cosiota>0) omegaphi=dphidm(v,e,cosiota,s)/dtdm(v,e,cosiota,s)/M;
+  else omegaphi=dphidm(v,e,-cosiota,-s)/dtdm(v,e,-cosiota,-s)/M;
+  return omegaphi;
+}
+// ----------
 
 /* ************************************************************
    SUBROUTINE PNEVOLUTION
@@ -292,25 +300,25 @@ void PNevolution(int vlength, double timestep, double *par, double v_map[], doub
 
   for(i=i0;i<=vlength;i++){
     if(i>*i_max) break;
-    if((1.-e[i]*e[i])*pow(dphidm(v[i],e[i],coslam,S[i])/dtdm(v[i],e[i],coslam,S[i])/M[i]*M_phys*SOLARMASSINSEC,-2./3.)<LSO_min && *i_max==i_neg){
+    if((1.-e[i]*e[i])*pow(OmegaPhi(v[i],e[i],coslam,S[i],M[i])*M_phys*SOLARMASSINSEC,-2./3.)<LSO_min && *i_max==i_neg){
       i_min=max(i-i_RR,0);
-      int i_buffer=(int)(10./(dphidm(v[i],e[i],coslam,S[i])/dtdm(v[i],e[i],coslam,S[i])/2./M_PI/M[i])/timestep)+1; // 10 extra orbits
+      int i_buffer=(int)(10./(OmegaPhi(v[i],e[i],coslam,S[i],M[i])/2./M_PI)/timestep)+1; // 10 extra orbits
       *i_max=min(i+i_buffer,i_neg);
     }
-    if(i>i0 && (i-i0)%i_RR==0 && (1.-e[i]*e[i])*pow(dphidm(v[i],e[i],coslam,S[i])/dtdm(v[i],e[i],coslam,S[i])/M[i]*M_phys*SOLARMASSINSEC,-2./3.)<LSO_max && *i_max==i_neg){
+    if(i>i0 && (i-i0)%i_RR==0 && (1.-e[i]*e[i])*pow(OmegaPhi(v[i],e[i],coslam,S[i],M[i])*M_phys*SOLARMASSINSEC,-2./3.)<LSO_max && *i_max==i_neg){
       i_min=max(i-i_RR,0);
-      IEKG iekg((1.-e[i]*e[i])*pow(dphidm(v[i],e[i],coslam,S[i])/dtdm(v[i],e[i],coslam,S[i])/M[i]*M_phys*SOLARMASSINSEC,-2./3.),e[i],coslam,S_phys);
+      IEKG iekg((1.-e[i]*e[i])*pow(OmegaPhi(v[i],e[i],coslam,S[i],M[i])*M_phys*SOLARMASSINSEC,-2./3.),e[i],coslam,S_phys);
       if(iekg.Stable==-1){
-        int i_buffer=(int)(10./(dphidm(v[i],e[i],coslam,S[i])/dtdm(v[i],e[i],coslam,S[i])/2./M_PI/M[i])/timestep)+1; // 10 extra orbits
+        int i_buffer=(int)(10./(OmegaPhi(v[i],e[i],coslam,S[i],M[i])/2./M_PI)/timestep)+1; // 10 extra orbits
         *i_max=min(i+i_buffer,i_neg);
       }
     }
-    if(e[i]>e[max(i0,i-1)] || v[i]<v[max(i0,i-1)]){fprintf(stderr,"Fitting error: Adjust duration of local fit\n"); exit(EXIT_FAILURE);}
+    if(v[i]<v[max(i0,i-1)]){fprintf(stderr,"Fitting error: Adjust duration of local fit\n"); exit(EXIT_FAILURE);}
   }
 
   while(*i_max-i_min>1){
     int i_mid=(*i_max+i_min)/2;
-    IEKG iekg((1.-e[i_mid]*e[i_mid])*pow(dphidm(v[i_mid],e[i_mid],coslam,S[i_mid])/dtdm(v[i_mid],e[i_mid],coslam,S[i_mid])/M[i_mid]*M_phys*SOLARMASSINSEC,-2./3.),e[i_mid],coslam,S_phys);
+    IEKG iekg((1.-e[i_mid]*e[i_mid])*pow(OmegaPhi(v[i_mid],e[i_mid],coslam,S[i_mid],M[i_mid])*M_phys*SOLARMASSINSEC,-2./3.),e[i_mid],coslam,S_phys);
     if(iekg.Stable==-1) *i_max=i_mid;
     else i_min=i_mid;
   }
@@ -480,7 +488,7 @@ void waveform(double tend,double *par, double v_map[], int vlength, double times
   int *i_max=(int*)malloc(sizeof(int));
   *i_max=vlength;
   PNevolution(vlength,timestep,par,v_map,gimdotvec,evec,nuvec,Phivec,gimvec,alpvec,vvec,Mvec,Svec,e_traj,M_phys,M_map,S_phys,S_map,dt_map,steps,i_max);
-  int i_buffer=(int)(10./(dphidm(vvec[*i_max],evec[*i_max],coslam,Svec[*i_max])/dtdm(vvec[*i_max],evec[*i_max],coslam,Svec[*i_max])/2./M_PI/Mvec[*i_max])/timestep)+1; // 10 orbits after LSO
+  int i_buffer=(int)(10./(OmegaPhi(vvec[*i_max],evec[*i_max],coslam,Svec[*i_max],Mvec[*i_max])/2./M_PI)/timestep)+1; // 10 orbits after LSO
 
   // ----- output trajectory -----
   if(traj==true){
@@ -489,15 +497,22 @@ void waveform(double tend,double *par, double v_map[], int vlength, double times
       v=vvec[i];
       M=Mvec[i];
       S=Svec[i];
-      hI[i]=(1.-e*e)*pow(dphidm(v,e,coslam,S)/dtdm(v,e,coslam,S)/M*M_phys*SOLARMASSINSEC,-2./3.);
+      hI[i]=(1.-e*e)*pow(OmegaPhi(v,e,coslam,S,M)*M_phys*SOLARMASSINSEC,-2./3.);
       hII[i]=e;
 /*
       // ACCURATE RECOVERY OF P FROM UNPHYSICAL TRAJECTORY (SLOW AND MAY BREAK NEAR PLUNGE, NOT USED TO TEST FOR STABILITY)
 
       double Omega_map[3],inv_map[3];
-      Omega_map[0]=drdm(v,e,coslam,S)/dtdm(v,e,coslam,S)/2./M_PI;
-      Omega_map[1]=dthetadm(v,e,coslam,S)/dtdm(v,e,coslam,S)/2./M_PI;
-      Omega_map[2]=dphidm(v,e,coslam,S)/dtdm(v,e,coslam,S)/2./M_PI;
+      if(coslam>0){
+        Omega_map[0]=drdm(v,e,coslam,S)/dtdm(v,e,coslam,S)/2./M_PI;
+        Omega_map[1]=dthetadm(v,e,coslam,S)/dtdm(v,e,coslam,S)/2./M_PI;
+        Omega_map[2]=dphidm(v,e,coslam,S)/dtdm(v,e,coslam,S)/2./M_PI;
+      }
+      else{
+        Omega_map[0]=drdm(v,e,-coslam,-S)/dtdm(v,e,-coslam,-S)/2./M_PI;
+        Omega_map[1]=dthetadm(v,e,-coslam,-S)/dtdm(v,e,-coslam,-S)/2./M_PI;
+        Omega_map[2]=-dphidm(v,e,-coslam,-S)/dtdm(v,e,-coslam,-S)/2./M_PI;
+      }
       ParInvMap(inv_map,Omega_map,1./v/v,M/SOLARMASSINSEC,S,e,lam);
       hI[i]=1./inv_map[0]/inv_map[0];
       hII[i]=e;
@@ -584,7 +599,7 @@ void waveform(double tend,double *par, double v_map[], int vlength, double times
     cos2gam=cos(gam2);
     sin2gam=sin(gam2);
     
-    Amp=pow(dphidm(v,e,coslam,S)/dtdm(v,e,coslam,S)/M*M_phys*SOLARMASSINSEC,2./3.)*zeta; // amplitude uses azimuthal frequency and physical mass rather than radial frequency and mapped mass
+    Amp=pow(OmegaPhi(v,e,coslam,S,M)*M_phys*SOLARMASSINSEC,2./3.)*zeta; // amplitude uses azimuthal frequency and physical mass rather than radial frequency and mapped mass
 
     for(n=1;n<nmodes+1;n++) {
       fn=n*nu+gimdotvec[i]/M_PI;
@@ -696,7 +711,7 @@ void waveform(double tend,double *par, double v_map[], int vlength, double times
     cos2gam=cos(gam2);
     sin2gam=sin(gam2);
 
-    Amp=pow(dphidm(v,e,coslam,S)/dtdm(v,e,coslam,S)/M*M_phys*SOLARMASSINSEC,2./3.)*zeta; // amplitude uses azimuthal frequency and physical mass rather than radial frequency and mapped mass
+    Amp=pow(OmegaPhi(v,e,coslam,S,M)*M_phys*SOLARMASSINSEC,2./3.)*zeta; // amplitude uses azimuthal frequency and physical mass rather than radial frequency and mapped mass
 
     for(n=1;n<nmodes+1;n++) {
       fn=n*nu+gimdotvec[i]/M_PI;
