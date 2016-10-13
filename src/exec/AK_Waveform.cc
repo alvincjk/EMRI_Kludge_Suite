@@ -57,7 +57,7 @@ int main(int argc, char *argv[]){
   file=fopen(filename,"w");
   double t=0.;
   for(int i=0;i<AK.length;i++){
-    fprintf(file,"%8.6e %14.12e %14.12e\n",t,hI[i],hII[i]);
+    fprintf(file,"%14.12e %14.12e %14.12e\n",t,hI[i],hII[i]);
     t+=AK.dt;
   }
   fclose(file);
@@ -78,7 +78,7 @@ int main(int argc, char *argv[]){
       if(i%i_RR==0 || i+i_RR>=AK.length){
         double p_t=(1.-evec[i]*evec[i])/pow(2.*M_PI*AK.M*SOLARMASSINSEC*nuvec[i],2./3.);
         IEKG geodesic_t(p_t,evec[i],cos(AK.iota),AK.s);
-        fprintf(file,"%8.6e %14.12e %14.12e %14.12e %14.12e %14.12e %14.12e\n",t,p_t,evec[i],AK.iota,geodesic_t.E,geodesic_t.Lz,geodesic_t.Q);
+        fprintf(file,"%14.12e %14.12e %14.12e %14.12e %14.12e %14.12e %14.12e\n",t,p_t,evec[i],AK.iota,geodesic_t.E,geodesic_t.Lz,geodesic_t.Q);
       }
       t+=AK.dt;
     }

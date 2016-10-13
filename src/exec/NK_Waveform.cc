@@ -78,7 +78,7 @@ int main(int argc, char *argv[]){
       return 0;
     }
     // ----------
-    fprintf(file,"%8.6e %14.12e %14.12e\n",t,hI[i],hII[i]);
+    fprintf(file,"%14.12e %14.12e %14.12e\n",t,hI[i],hII[i]);
     t+=NK.dt;
   }
   fclose(file);
@@ -97,7 +97,7 @@ int main(int argc, char *argv[]){
     if(CheckFile(filename)==1) fprintf(stderr,"Output warning: Overwriting %s\n",filename);
     file=fopen(filename,"w");
     for(int i=1;i<=steps;i++){
-      fprintf(file,"%8.6e %14.12e %14.12e %14.12e %14.12e %14.12e %14.12e\n",trajdata[i].t*SOLARMASSINSEC*NK.M*NK.M/NK.mu,trajdata[i].p,trajdata[i].ecc,acos(trajdata[i].cosiota),trajdata[i].E,trajdata[i].Lz,trajdata[i].Q);
+      fprintf(file,"%14.12e %14.12e %14.12e %14.12e %14.12e %14.12e %14.12e\n",trajdata[i].t*SOLARMASSINSEC*NK.M*NK.M/NK.mu,trajdata[i].p,trajdata[i].ecc,acos(trajdata[i].cosiota),trajdata[i].E,trajdata[i].Lz,trajdata[i].Q);
     }
     fclose(file);
     free(trajdata);

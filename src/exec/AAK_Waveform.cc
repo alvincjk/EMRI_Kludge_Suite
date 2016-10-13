@@ -77,7 +77,7 @@ int main(int argc, char *argv[]){
   file=fopen(filename,"w");
   double t=0.;
   for(int i=0;i<AAK.length;i++){
-    fprintf(file,"%8.6e %14.12e %14.12e\n",t,hI[i],hII[i]);
+    fprintf(file,"%14.12e %14.12e %14.12e\n",t,hI[i],hII[i]);
     t+=AAK.dt;
   }
   fclose(file);
@@ -99,7 +99,7 @@ int main(int argc, char *argv[]){
     for(int i=0;i<i_max;i++){
       if(i%i_RR==0 || i+i_RR>=i_max){
         IEKG geodesic_t(pvec[i],evec[i],cos(AAK.iota),AAK.s);
-        fprintf(file,"%8.6e %14.12e %14.12e %14.12e %14.12e %14.12e %14.12e\n",t,pvec[i],evec[i],AAK.iota,geodesic_t.E,geodesic_t.Lz,geodesic_t.Q);
+        fprintf(file,"%14.12e %14.12e %14.12e %14.12e %14.12e %14.12e %14.12e\n",t,pvec[i],evec[i],AAK.iota,geodesic_t.E,geodesic_t.Lz,geodesic_t.Q);
       }
       t+=AAK.dt;
     }
