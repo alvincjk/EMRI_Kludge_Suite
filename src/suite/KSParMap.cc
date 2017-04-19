@@ -533,4 +533,53 @@ void PolyFit(double *coeff,double *x,double *y,int n){
 
 }
 
+void RotCoeff(double rot[],double iota,double theta_S,double phi_S,double theta_K,double phi_K,double alpha){
+
+  gsl_vector *n,*L,*S,*nxL,*nxS,*nxL_xn,*nxS_xn;
+  n=gsl_vector_alloc(3);
+  L=gsl_vector_alloc(3);
+  S=gsl_vector_alloc(3);
+  nxL=gsl_vector_alloc(3);
+  nxS=gsl_vector_alloc(3);
+  nxL_xn=gsl_vector_alloc(3);
+  nxS_xn=gsl_vector_alloc(3);
+  gsl_vector_set(n,0,sin(theta_S)*cos(phi_S));
+  gsl_vector_set(n,1,sin(theta_S)*sin(phi_S));
+  gsl_vector_set(n,2,cos(theta_S));
+  gsl_vector_set(S,0,sin(theta_K)*cos(phi_K));
+  gsl_vector_set(S,1,sin(theta_K)*sin(phi_K));
+  gsl_vector_set(S,2,cos(theta_K));
+  gsl_vector_set(L,0,cos(iota)*sin(theta_K)*cos(phi_K)+sin(iota)*(sin(alpha)*sin(phi_K)-cos(alpha)*cos(theta_K)*cos(phi_K)));
+  gsl_vector_set(L,1,cos(iota)*sin(theta_K)*sin(phi_K)-sin(iota)*(sin(alpha)*cos(phi_K)+cos(alpha)*cos(theta_K)*sin(phi_K)));
+  gsl_vector_set(L,2,cos(iota)*cos(theta_K)+sin(iota)*cos(alpha)*sin(theta_K));
+  cross(n,L,nxL);
+  gsl_blas_dscal(1./gsl_blas_dnrm2(nxL),nxL);
+  cross(n,S,nxS);
+  gsl_blas_dscal(1./gsl_blas_dnrm2(nxS),nxS);
+  cross(nxL,n,nxL_xn);
+  cross(nxS,n,nxS_xn);
+
+  double HAp[6],HAc[6],HNp[6],HNc[6];
+  for(int t=0;t<6;t++){
+    int i=(int)((sqrt(8*t+1)-1)/2);
+    int j=t-i*(i+1)/2;
+    HAp[t]=gsl_vector_get(nxL,i)*gsl_vector_get(nxL,j)-gsl_vector_get(nxL_xn,i)*gsl_vector_get(nxL_xn,j);
+    HAc[t]=gsl_vector_get(nxL,i)*gsl_vector_get(nxL_xn,j)+gsl_vector_get(nxL_xn,i)*gsl_vector_get(nxL,j);
+    HNp[t]=gsl_vector_get(nxS,i)*gsl_vector_get(nxS,j)-gsl_vector_get(nxS_xn,i)*gsl_vector_get(nxS_xn,j);
+    HNc[t]=gsl_vector_get(nxS,i)*gsl_vector_get(nxS_xn,j)+gsl_vector_get(nxS_xn,i)*gsl_vector_get(nxS,j);
+  }
+  rot[0]=(HAp[0]*HNp[0]+HAp[2]*HNp[2]+HAp[5]*HNp[5])/2.+HAp[1]*HNp[1]+HAp[3]*HNp[3]+HAp[4]*HNp[4];
+  rot[1]=(HAc[0]*HNp[0]+HAc[2]*HNp[2]+HAc[5]*HNp[5])/2.+HAc[1]*HNp[1]+HAc[3]*HNp[3]+HAc[4]*HNp[4];
+  rot[2]=(HAp[0]*HNc[0]+HAp[2]*HNc[2]+HAp[5]*HNc[5])/2.+HAp[1]*HNc[1]+HAp[3]*HNc[3]+HAp[4]*HNc[4];
+  rot[3]=(HAc[0]*HNc[0]+HAc[2]*HNc[2]+HAc[5]*HNc[5])/2.+HAc[1]*HNc[1]+HAc[3]*HNc[3]+HAc[4]*HNc[4];
+
+  gsl_vector_free(n);
+  gsl_vector_free(L);
+  gsl_vector_free(S);
+  gsl_vector_free(nxL);
+  gsl_vector_free(nxS);
+  gsl_vector_free(nxL_xn);
+  gsl_vector_free(nxS_xn);
+
+}
 

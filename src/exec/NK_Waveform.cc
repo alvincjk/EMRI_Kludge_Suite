@@ -8,6 +8,7 @@
 #include "Globals.h"
 #include "KSParMap.h"
 #include "KSTools.h"
+#include "Waveform.h"
 #include "DopplerShiftedWaveform.h"
 
 int main(int argc, char *argv[]){
@@ -43,9 +44,17 @@ int main(int argc, char *argv[]){
   hII=(Real*)fftw_malloc(NK.length*sizeof(Real));
   Real Intrinsparams[]={NK.p,log(NK.mu/NK.M),log(NK.M),NK.e,NK.psi,NK.iota,chi,NK.s};
   Real Extrinsparams[]={cos(NK.theta_S),NK.phi_S,cos(NK.theta_K),NK.phi_K,phi,1000.*NK.D,0.};
-  DopplerShiftedWaveform wave(Intrinsparams,Extrinsparams,NK.dt,0,NK.length,0.,70.,0.3,0.7);
-  if(NK.LISA==true) wave.hLISA(0,NK.length,hI,hII,0.);
-  else wave.hpluscross(0,NK.length,hI,hII);
+
+  if(NK.LISA==true){
+    DopplerShiftedWaveform wave(Intrinsparams,Extrinsparams,NK.dt,0,NK.length,0.,70.,0.3,0.7);
+    wave.hLISA(0,NK.length,hI,hII,0.);
+  }
+  else{
+    Inspiral insp(Intrinsparams,NK.dt,0,NK.length,true,false,NULL);
+    Waveform wave(Extrinsparams,&insp);
+    wave.hpluscross(0,NK.length,hI,hII);
+  }
+
   ticks=clock()-ticks;
   double secs=((double)ticks)/CLOCKS_PER_SEC;
   // ----------

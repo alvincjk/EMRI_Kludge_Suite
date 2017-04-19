@@ -7,7 +7,7 @@
 bin/example
 
 # Convert waveform to LISA response (defined in Cutler, 1998); takes bool
-true
+false
 
 # Output inspiral trajectory (p/M,e,iota,E,L_z,Q) to <path>_traj.dat; takes bool
 true
@@ -22,13 +22,13 @@ true
 # WAVEFORM PARAMETERS
 
 # length: Waveform points; takes int
-1000000
+1051200
 
 # dt: Time step in seconds; takes double
-10.
+5.
 
 # p/M: Initial semi-latus rectum; takes double
-9.
+8.25
 
 # T: Waveform duration in years (only used if dt is set negative, i.e. unspecified); takes double
 1.
@@ -49,13 +49,13 @@ true
 1.e6
 
 # a/M: BH spin (=S/M^2); takes double
-0.8
+0.5
 
 # e: Initial eccentricity; takes double
-0.3
+0.1
 
 # iota: Inclination angle of L from S; takes double
-0.5
+0.524
 
 # gamma: Initial angle of periapsis from LxS; takes double
 0.
@@ -67,16 +67,16 @@ true
 # EXTRINSIC PARAMETERS
 
 # theta_S: Initial source polar angle in ecliptic coordinates; takes double
-0.8
+0.785
 
 # phi_S: Initial source azimuthal angle in ecliptic coordinates; takes double
-0.8
+0.785
 
 # theta_K: Initial BH spin polar angle in ecliptic coordinates; takes double
-1.
+1.05
 
 # phi_K: Initial BH spin azimuthal angle in ecliptic coordinates; takes double
-1.
+1.05
 
 # alpha: Initial azimuthal orientation (defined by Eq.(18) in Barack & Cutler, 2004); takes double
 0.

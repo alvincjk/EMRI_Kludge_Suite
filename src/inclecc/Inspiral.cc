@@ -343,7 +343,7 @@ Inspiral::Inspiral(const Real *params, double deltat, const int Nfrst, const int
   Real orbelts[3],orbspeeds[3],orbconsts[3];
   FILE *outfile;
   bool writeout=false;
-  if (filenm) {
+  if (datout) {
 	writeout=true;
   	outfile=fopen(filenm,"w");
 	printf("Writing file!!\n");

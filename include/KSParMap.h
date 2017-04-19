@@ -59,5 +59,7 @@ void Interp(double *x_in,double *y_in,double *x_out,double *y_out,int n);
 
 void PolyFit(double *coeff,double *x,double *y,int n);
 
+void RotCoeff(double rot[],double iota,double theta_S,double phi_S,double theta_K,double phi_K,double alpha);
+
 #endif
 

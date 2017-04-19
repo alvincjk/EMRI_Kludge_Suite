@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <math.h>
 
+#include "KSParMap.h"
 #include "AK.h"
 
 using namespace std;
@@ -459,8 +460,8 @@ void waveform(double tend,double *par, double nu0, int vlength, double timestep,
       sinorbphs=sin(orbphs-phiS);
       cosq=.5*cosqS-halfsqrt3*sinqS*cosorbphs;
       phiw=orbphs+ArcT(sinqS*sinorbphs,halfsqrt3*cosqS+.5*sinqS*cosorbphs);
-      psiup=.5*cosqL-halfsqrt3*sinqL*cos(orbphs-phiL)-cosq*(cosqL*cosqS+sinqL*sinqS*cos(phiL-phiS));
-      psidown=.5*sinqL*sinqS*sin(phiL-phiS)-halfsqrt3*cos(orbphs)*(cosqL*sinqS*sin(phiS)-cosqS*sinqL*sin(phiL))-halfsqrt3*sin(orbphs)*(cosqS*sinqL*cos(phiL)-cosqL*sinqS*cos(phiS));
+      psiup=.5*cosqK-halfsqrt3*sinqK*cos(orbphs-phiK)-cosq*(cosqK*cosqS+sinqK*sinqS*cos(phiK-phiS));
+      psidown=.5*sinqK*sinqS*sin(phiK-phiS)-halfsqrt3*cos(orbphs)*(cosqK*sinqS*sin(phiS)-cosqS*sinqK*sin(phiK))-halfsqrt3*sin(orbphs)*(cosqS*sinqK*cos(phiK)-cosqK*sinqS*cos(phiS));
       psi=ArcT(psidown,psiup);
       cosq1=.5*(1+cosq*cosq);
       cos2phi=cos(2.*phiw);
@@ -511,6 +512,12 @@ void waveform(double tend,double *par, double nu0, int vlength, double timestep,
 
       Aplus=-(1.+Ldotn2)*(a*cos2gam-b*sin2gam)+c*(1-Ldotn2);
       Acros=2.*Ldotn*(b*cos2gam+a*sin2gam);
+
+      // ROTATION TO NK WAVE FRAME (NOT COMPUTATIONALLY OPTIMISED)
+      double rot[4],Aplusold=Aplus,Acrosold=Acros;
+      RotCoeff(rot,lam,qS,phiS,qK,phiK,alp);
+      Aplus=Aplusold*rot[0]+Acrosold*rot[1];
+      Acros=Aplusold*rot[2]+Acrosold*rot[3];
 
       hnI=prefact*(FplusI *Aplus+FcrosI *Acros);
       hnII=prefact*(FplusII*Aplus+FcrosII*Acros);
@@ -596,9 +603,8 @@ void waveform(double tend,double *par, double nu0, int vlength, double timestep,
       sinorbphs=sin(orbphs-phiS);
       cosq=.5*cosqS-halfsqrt3*sinqS*cosorbphs;
       phiw=orbphs+ArcT(sinqS*sinorbphs,halfsqrt3*cosqS+.5*sinqS*cosorbphs);
-      psiup=.5*cosqL-halfsqrt3*sinqL*cos(orbphs-phiL)-cosq*(cosqL*cosqS+sinqL*sinqS*cos(phiL-phiS));
-      psidown=.5*sinqL*sinqS*sin(phiL-phiS)-halfsqrt3*cos(orbphs)*(cosqL*sinqS*sin(phiS)-cosqS*sinqL*sin(phiL))
-        -halfsqrt3*sin(orbphs)*(cosqS*sinqL*cos(phiL)-cosqL*sinqS*cos(phiS));
+      psiup=.5*cosqK-halfsqrt3*sinqK*cos(orbphs-phiK)-cosq*(cosqK*cosqS+sinqK*sinqS*cos(phiK-phiS));
+      psidown=.5*sinqK*sinqS*sin(phiK-phiS)-halfsqrt3*cos(orbphs)*(cosqK*sinqS*sin(phiS)-cosqS*sinqK*sin(phiK))-halfsqrt3*sin(orbphs)*(cosqS*sinqK*cos(phiK)-cosqK*sinqS*cos(phiS));
       psi=ArcT(psidown,psiup);
       cosq1=.5*(1+cosq*cosq);
       cos2phi=cos(2.*phiw);
@@ -651,6 +657,12 @@ void waveform(double tend,double *par, double nu0, int vlength, double timestep,
       Aplus=-(1.+Ldotn2)*(a*cos2gam-b*sin2gam)+c*(1-Ldotn2);
       Acros=2.*Ldotn*(b*cos2gam+a*sin2gam);
 
+      // ROTATION TO NK WAVE FRAME (NOT COMPUTATIONALLY OPTIMISED)
+      double rot[4],Aplusold=Aplus,Acrosold=Acros;
+      RotCoeff(rot,lam,qS,phiS,qK,phiK,alp);
+      Aplus=Aplusold*rot[0]+Acrosold*rot[1];
+      Acros=Aplusold*rot[2]+Acrosold*rot[3];
+
       hnI=prefact*(FplusI *Aplus+FcrosI *Acros);
       hnII=prefact*(FplusII*Aplus+FcrosII*Acros);
 
@@ -693,7 +705,7 @@ void GenBCWave(double *hI, double *hII, double deltat, int vlength, double e0, d
 
   /* Set parameters for waveform. */
   //     t0
-  par[1]=250.; // constant time offset to ensure far-field agreement with NK at t=0 - need to track this down
+  par[1]=0.;
   //     mu
   par[2]=mu*SOLARMASSINSEC;
   //     M
