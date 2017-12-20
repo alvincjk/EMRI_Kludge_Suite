@@ -55,7 +55,7 @@ void ParMap(double map[],double Omega[],double p,double M,double s,double e,doub
 
 void ParInvMap(double map[],double Omega[],double p,double M,double s,double e,double iota);
 
-void Interp(double *x_in,double *y_in,double *x_out,double *y_out,int n);
+void Interp(double *x_in,double *y_in,int n_in,double *x_out,double *y_out,int n_out);
 
 void PolyFit(double *coeff,double *x,double *y,int n);
 

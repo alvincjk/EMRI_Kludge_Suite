@@ -486,13 +486,13 @@ void ParInvMap(double map[],double Omega[],double p,double M,double s,double e,d
 
 }
 
-void Interp(double *x_in,double *y_in,double *x_out,double *y_out,int n){
+void Interp(double *x_in,double *y_in,int n_in,double *x_out,double *y_out,int n_out){
 
   gsl_interp_accel *acc=gsl_interp_accel_alloc();
-  gsl_spline *spline=gsl_spline_alloc(gsl_interp_cspline,n);
-  gsl_spline_init(spline,x_in,y_in,n);
+  gsl_spline *spline=gsl_spline_alloc(gsl_interp_cspline,n_in);
+  gsl_spline_init(spline,x_in,y_in,n_in);
 
-  for(int i=0;i<n;i++) y_out[i]=gsl_spline_eval(spline,x_out[i],acc);
+  for(int i=0;i<n_out;i++) y_out[i]=gsl_spline_eval(spline,x_out[i],acc);
 
   gsl_spline_free(spline);
   gsl_interp_accel_free(acc);
@@ -505,24 +505,22 @@ void PolyFit(double *coeff,double *x,double *y,int n){
   gsl_matrix *X,*cov;
   gsl_vector *Y,*c;
 
-  X = gsl_matrix_alloc(n-1,4);
+  X = gsl_matrix_alloc(n-1,2);
   Y = gsl_vector_alloc(n-1);
-  c = gsl_vector_alloc(4);
-  cov = gsl_matrix_alloc(4,4);
+  c = gsl_vector_alloc(2);
+  cov = gsl_matrix_alloc(2,2);
 
   for(int i=0;i<n-1;i++){
     gsl_matrix_set(X,i,0,x[i+1]-x[0]);
     gsl_matrix_set(X,i,1,pow(x[i+1]-x[0],2));
-    gsl_matrix_set(X,i,2,pow(x[i+1]-x[0],3));
-    gsl_matrix_set(X,i,3,pow(x[i+1]-x[0],4));
     gsl_vector_set(Y,i,y[i+1]-y[0]);
   }
 
-  gsl_multifit_linear_workspace *work=gsl_multifit_linear_alloc(n-1,4);
+  gsl_multifit_linear_workspace *work=gsl_multifit_linear_alloc(n-1,2);
   gsl_multifit_linear(X,Y,c,cov,&chisq,work);
   gsl_multifit_linear_free(work);
 
-  for(int i=0;i<4;i++){
+  for(int i=0;i<2;i++){
     coeff[i]=gsl_vector_get(c,i);
   }
 
@@ -541,8 +539,7 @@ void RotCoeff(double rot[],double iota,double theta_S,double phi_S,double theta_
   S=gsl_vector_alloc(3);
   nxL=gsl_vector_alloc(3);
   nxS=gsl_vector_alloc(3);
-  nxL_xn=gsl_vector_alloc(3);
-  nxS_xn=gsl_vector_alloc(3);
+
   gsl_vector_set(n,0,sin(theta_S)*cos(phi_S));
   gsl_vector_set(n,1,sin(theta_S)*sin(phi_S));
   gsl_vector_set(n,2,cos(theta_S));
@@ -553,33 +550,28 @@ void RotCoeff(double rot[],double iota,double theta_S,double phi_S,double theta_
   gsl_vector_set(L,1,cos(iota)*sin(theta_K)*sin(phi_K)-sin(iota)*(sin(alpha)*cos(phi_K)+cos(alpha)*cos(theta_K)*sin(phi_K)));
   gsl_vector_set(L,2,cos(iota)*cos(theta_K)+sin(iota)*cos(alpha)*sin(theta_K));
   cross(n,L,nxL);
-  gsl_blas_dscal(1./gsl_blas_dnrm2(nxL),nxL);
   cross(n,S,nxS);
-  gsl_blas_dscal(1./gsl_blas_dnrm2(nxS),nxS);
-  cross(nxL,n,nxL_xn);
-  cross(nxS,n,nxS_xn);
 
-  double HAp[6],HAc[6],HNp[6],HNc[6];
-  for(int t=0;t<6;t++){
-    int i=(int)((sqrt(8*t+1)-1)/2);
-    int j=t-i*(i+1)/2;
-    HAp[t]=gsl_vector_get(nxL,i)*gsl_vector_get(nxL,j)-gsl_vector_get(nxL_xn,i)*gsl_vector_get(nxL_xn,j);
-    HAc[t]=gsl_vector_get(nxL,i)*gsl_vector_get(nxL_xn,j)+gsl_vector_get(nxL_xn,i)*gsl_vector_get(nxL,j);
-    HNp[t]=gsl_vector_get(nxS,i)*gsl_vector_get(nxS,j)-gsl_vector_get(nxS_xn,i)*gsl_vector_get(nxS_xn,j);
-    HNc[t]=gsl_vector_get(nxS,i)*gsl_vector_get(nxS_xn,j)+gsl_vector_get(nxS_xn,i)*gsl_vector_get(nxS,j);
-  }
-  rot[0]=(HAp[0]*HNp[0]+HAp[2]*HNp[2]+HAp[5]*HNp[5])/2.+HAp[1]*HNp[1]+HAp[3]*HNp[3]+HAp[4]*HNp[4];
-  rot[1]=(HAc[0]*HNp[0]+HAc[2]*HNp[2]+HAc[5]*HNp[5])/2.+HAc[1]*HNp[1]+HAc[3]*HNp[3]+HAc[4]*HNp[4];
-  rot[2]=(HAp[0]*HNc[0]+HAp[2]*HNc[2]+HAp[5]*HNc[5])/2.+HAp[1]*HNc[1]+HAp[3]*HNc[3]+HAp[4]*HNc[4];
-  rot[3]=(HAc[0]*HNc[0]+HAc[2]*HNc[2]+HAc[5]*HNc[5])/2.+HAc[1]*HNc[1]+HAc[3]*HNc[3]+HAc[4]*HNc[4];
+  double norm=gsl_blas_dnrm2(nxL)*gsl_blas_dnrm2(nxS);
+  double dot,cosrot,sinrot;
+  gsl_blas_ddot(nxL,nxS,&dot);
+  cosrot=dot/norm;
+  gsl_blas_ddot(L,nxS,&dot);
+  sinrot=dot;
+  gsl_blas_ddot(S,nxL,&dot);
+  sinrot-=dot;
+  sinrot/=norm;
+
+  rot[0]=2.*cosrot*cosrot-1.;
+  rot[1]=cosrot*sinrot;
+  rot[2]=-rot[1];
+  rot[3]=rot[0];
 
   gsl_vector_free(n);
   gsl_vector_free(L);
   gsl_vector_free(S);
   gsl_vector_free(nxL);
   gsl_vector_free(nxS);
-  gsl_vector_free(nxL_xn);
-  gsl_vector_free(nxS_xn);
 
 }
 

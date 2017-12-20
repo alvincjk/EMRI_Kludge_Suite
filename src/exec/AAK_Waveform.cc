@@ -36,9 +36,9 @@ int main(int argc, char *argv[]){
   GKTrajFast gktraj3(cos(AAK.iota),AAK.s);
   gktraj3.p=AAK.p;
   gktraj3.ecc=AAK.e;
-  int maxsteps=10;
+  int maxsteps=100;
   int steps=0;
-  double dt_fit=AAK.T_fit/(maxsteps-1);
+  double dt_fit=min(AAK.T_fit,AAK.length*AAK.dt/SOLARMASSINSEC/AAK.M/AAK.M*AAK.mu)/(maxsteps-1);
   TrajData *traj3;
   traj3=(TrajData*)malloc((size_t)((maxsteps+1)*sizeof(TrajData)));
   gktraj3.Eccentric(dt_fit,traj3,maxsteps,steps);
@@ -59,10 +59,11 @@ int main(int argc, char *argv[]){
     dt_map[i-1]=traj3[i].t*SOLARMASSINSEC*AAK.M*AAK.M/AAK.mu;
   }
 
-  double *hI,*hII;
+  double *t,*hI,*hII;
+  t=(double*)malloc(AAK.length*sizeof(double));
   hI=(double*)fftw_malloc(AAK.length*sizeof(double));
   hII=(double*)fftw_malloc(AAK.length*sizeof(double));
-  GenBCWave(hI,hII,AAK.dt,AAK.length,e_traj,v_map,AAK.M,M_map,AAK.mu,AAK.s,s_map,AAK.D,AAK.iota,AAK.gamma,Phi,AAK.theta_S,AAK.phi_S,AAK.alpha,AAK.theta_K,AAK.phi_K,dt_map,steps,AAK.LISA,false);
+  GenWave(t,hI,hII,AAK.dt,AAK.length,e_traj,v_map,AAK.M,M_map,AAK.mu,AAK.s,s_map,AAK.D,AAK.iota,AAK.gamma,Phi,AAK.theta_S,AAK.phi_S,AAK.alpha,AAK.theta_K,AAK.phi_K,dt_map,steps,AAK.backint,AAK.LISA,false);
 
   ticks=clock()-ticks;
   double secs=((double)ticks)/CLOCKS_PER_SEC;
@@ -75,23 +76,18 @@ int main(int argc, char *argv[]){
   strcat(filename,"_wave.dat");
   if(CheckFile(filename)==1) fprintf(stderr,"Output warning: Overwriting %s\n",filename);
   file=fopen(filename,"w");
-  double t=0.;
-  for(int i=0;i<AAK.length;i++){
-    fprintf(file,"%14.12e %14.12e %14.12e\n",t,hI[i],hII[i]);
-    t+=AAK.dt;
-  }
+  for(int i=0;i<AAK.length;i++) fprintf(file,"%14.12e %14.12e %14.12e\n",t[i],hI[i],hII[i]);
   fclose(file);
 
   if(AAK.traj==true){
     double *pvec,*evec;
     pvec=(double*)malloc(AAK.length*sizeof(double));
     evec=(double*)malloc(AAK.length*sizeof(double));
-    GenBCWave(pvec,evec,AAK.dt,AAK.length,e_traj,v_map,AAK.M,M_map,AAK.mu,AAK.s,s_map,AAK.D,AAK.iota,AAK.gamma,Phi,AAK.theta_S,AAK.phi_S,AAK.alpha,AAK.theta_K,AAK.phi_K,dt_map,steps,AAK.LISA,true);
+    GenWave(t,pvec,evec,AAK.dt,AAK.length,e_traj,v_map,AAK.M,M_map,AAK.mu,AAK.s,s_map,AAK.D,AAK.iota,AAK.gamma,Phi,AAK.theta_S,AAK.phi_S,AAK.alpha,AAK.theta_K,AAK.phi_K,dt_map,steps,AAK.backint,AAK.LISA,true);
     strcpy(filename,AAK.path);
     strcat(filename,"_traj.dat");
     if(CheckFile(filename)==1) fprintf(stderr,"Output warning: Overwriting %s\n",filename);
     file=fopen(filename,"w");
-    t=0.;
     double dt_RR=0.001; // radiation-reaction timestep for downsampling
     int i_RR=(int)(dt_RR*(SOLARMASSINSEC*AAK.M*AAK.M/AAK.mu)/AAK.dt)+1;
     int i_max=0;
@@ -99,9 +95,8 @@ int main(int argc, char *argv[]){
     for(int i=0;i<i_max;i++){
       if(i%i_RR==0 || i+i_RR>=i_max){
         IEKG geodesic_t(pvec[i],evec[i],cos(AAK.iota),AAK.s);
-        fprintf(file,"%14.12e %14.12e %14.12e %14.12e %14.12e %14.12e %14.12e\n",t,pvec[i],evec[i],AAK.iota,geodesic_t.E,geodesic_t.Lz,geodesic_t.Q);
+        fprintf(file,"%14.12e %14.12e %14.12e %14.12e %14.12e %14.12e %14.12e\n",t[i],pvec[i],evec[i],AAK.iota,geodesic_t.E,geodesic_t.Lz,geodesic_t.Q);
       }
-      t+=AAK.dt;
     }
     fclose(file);
     free(pvec);

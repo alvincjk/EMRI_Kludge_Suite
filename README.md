@@ -1,6 +1,6 @@
 # EMRI Kludge Suite
 
-**Version 0.1.4**
+**Version 0.2.0**
 
 This is a C/C++ suite that allows kludge waveforms for extreme-mass-ratio inspirals (EMRIs) to be generated with shared settings and parameters. The three waveforms included in the suite are the augmented analytic kludge (AAK) [1], the analytic kludge (AK) [2], and the numerical kludge (NK) [3].
 
@@ -22,18 +22,14 @@ will generate an AAK waveform with default settings and parameters. Three files 
 - `example_traj.dat` contains inspiral trajectory data (t, p/M, e, iota, E, L_z, Q)
 - `example_info.txt` contains additional information such as signal-to-noise ratio and waveform timing
 
-NEW IN VERSION 0.1.1: The AAK implementation now uses a 10-point quartic polynomial fit, which provides high overlaps with the NK over longer durations [4]. The time duration spanned by the fitting points may be specified by the new parameter T_fit (default value is 10 radiation-reaction time steps M^2/mu).
-
-NEW IN VERSION 0.1.2: A fast approximate calculation of the last stable orbit has been implemented for the AAK, allowing the waveform to automatically include plunge [4]. The trajectory file is truncated at the last stable orbit, while a one-sided Planck-taper window is used to zero the waveform smoothly over 10 additional orbits.
+NEW IN VERSION 0.2.0: Automated backward integration for plunging orbits; adaptive fitting duration; improved speed and robustness.
 
 Please check https://github.com/alvincjk/EMRI_Kludge_Suite for any version updates.
 
-&mdash; Alvin Chua, Apr 2017
+&mdash; Alvin Chua, Dec 2017
 
 ## Work in progress
 
-- Rotation to NK wave frame for the AAK/AK is currently not computationally efficient
-- More robust fitting algorithms and backward integration will be implemented soon (the latter feature was removed because the frequency map is formally ill-defined at plunge)
 - Suite utilities to compute waveform matches, Fisher matrices, etc. may be included in the future
 
 ## List of (important) known bugs
@@ -45,11 +41,11 @@ Please check https://github.com/alvincjk/EMRI_Kludge_Suite for any version updat
 ## Authors
 
 **Alvin Chua**  
-Institute of Astronomy, University of Cambridge  
-`ajkc3@ast.cam.ac.uk`
+Jet Propulsion Laboratory
+`alvin.j.chua@jpl.nasa.gov`
 
 **Jonathan Gair**  
-School of Mathematics, University of Edinburgh  
+School of Mathematics, University of Edinburgh
 `j.gair@ed.ac.uk`
 
 The EMRI Kludge Suite is also based on code written by Leor Barack (for the AK) and Scott Hughes (for the NK).
@@ -62,4 +58,4 @@ The EMRI Kludge Suite is also based on code written by Leor Barack (for the AK) 
 
 [3] S. Babak, H. Fang, J. R. Gair, K. Glampedakis & S. A. Hughes. "Kludge" gravitational waveforms for a test-body orbiting a Kerr black hole. *Physical Review D* 75:024005, 2007.
 
-[4] A. J. K. Chua, C. J. Moore & J. R. Gair. The Fast and the Fiducial: Augmented kludge waveforms for detecting extreme-mass-ratio inspirals. *In prep.*
+[4] A. J. K. Chua, C. J. Moore & J. R. Gair. Augmented kludge waveforms for detecting extreme-mass-ratio inspirals. *Physical Review D* 96:044005, 2017.

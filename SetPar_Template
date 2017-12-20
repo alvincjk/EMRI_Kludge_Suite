@@ -6,6 +6,9 @@
 # File path (waveform will be output to <path>_wave.dat); takes string
 bin/example
 
+# End waveform at plunge and integrate backwards from initial point (only used by AAK_Waveform); takes bool
+true
+
 # Convert waveform to LISA response (defined in Cutler, 1998); takes bool
 false
 
@@ -22,13 +25,16 @@ true
 # WAVEFORM PARAMETERS
 
 # length: Waveform points; takes int
-1051200
+1000000
 
 # dt: Time step in seconds; takes double
 5.
 
 # p/M: Initial semi-latus rectum; takes double
-8.25
+5.
+
+
+# OPTIONAL WAVEFORM PARAMETERS
 
 # T: Waveform duration in years (only used if dt is set negative, i.e. unspecified); takes double
 1.
@@ -36,8 +42,8 @@ true
 # f: Initial reference GW frequency in Hz (only used if p/M is set negative, i.e. unspecified); takes double
 2.e-3
 
-# T_fit: Duration of local fit in radiation-reaction time steps M^2/mu (only used by AAK_Waveform); takes double
-10.
+# T_fit: Maximum duration of local fit in radiation-reaction time steps M^2/mu (only used by AAK_Waveform); takes double
+1.
 
 
 # INTRINSIC PARAMETERS

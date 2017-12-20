@@ -26,7 +26,7 @@ int CheckFile(const char *filename){
 int LoadSetPar(SetPar *par,const char *filename){
 
   char str_par[100];
-  bool bool_par[4];
+  bool bool_par[5];
   double num_par[19];
 
   ifstream file(filename);
@@ -45,7 +45,7 @@ int LoadSetPar(SetPar *par,const char *filename){
         }
         str_count++;
       }
-      else if(bool_count<4){
+      else if(bool_count<5){
         line_stream>>boolalpha>>bool_par[bool_count];
 //        fprintf(stderr,"%s\n",bool_par[bool_count]?"true":"false");
         if(line_stream.fail()){
@@ -69,17 +69,18 @@ int LoadSetPar(SetPar *par,const char *filename){
       }
     }
   }
-  if(str_count+bool_count+num_count<24){
+  if(str_count+bool_count+num_count<25){
     fprintf(stderr,"Parsing error: Too few entries in settings/parameters file\n");
     return 0;
   }
 
   strcpy(par->path,str_par);
 
-  par->LISA=bool_par[0];
-  par->traj=bool_par[1];
-  par->SNR=bool_par[2];
-  par->timing=bool_par[3];
+  par->backint=bool_par[0];
+  par->LISA=bool_par[1];
+  par->traj=bool_par[2];
+  par->SNR=bool_par[3];
+  par->timing=bool_par[4];
 
   par->length=(int)num_par[0];
   par->dt=num_par[1];

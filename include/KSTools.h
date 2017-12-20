@@ -24,6 +24,7 @@ struct SetPar {
 
   char path[100];
 
+  bool backint;
   bool LISA;
   bool traj;
   bool SNR;

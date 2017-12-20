@@ -3,7 +3,6 @@
 #ifndef _Globals_H
 #define _Globals_H
 
-
 #include <iostream>
 #include <math.h>
 #include <complex>
