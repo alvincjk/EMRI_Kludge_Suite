@@ -11,7 +11,7 @@
 #include "KSTools.h"
 #include "AAK.h"
 
-double AAKwave(SetPar *AAK, double *t, double *hI, double *hII){
+double AAKwave(SetPar &AAK, double *t, double *hI, double *hII){
 
   clock_t ticks=clock();
 

@@ -34,7 +34,7 @@ CFLAGS = -O3 -Wall -Wno-unused -Wno-uninitialized -Wno-deprecated
 
 all : AAK_Waveform AK_Waveform NK_Waveform
 
-AAK_Waveform : AAK_Waveform.cc -lKS -lIEKG -lGKG -lCirc -lLB -lRRGW -lNR Globals.h GKTrajFast.h KSParMap.h KSTools.h AAK.h
+AAK_Waveform : AAK_Waveform.cc -lKS -lIEKG -lGKG -lCirc -lLB -lRRGW -lNR Globals.h GKTrajFast.h KSParMap.h KSTools.h AAK.h AAKpy.h
 	$(CC) $(EXECSRC)/AAK_Waveform.cc -o $(BIN)/AAK_Waveform $(CFLAGS) -I$(INC) -L$(LIB) -lKS -lIEKG -lCirc -lGKG -lLB -lRRGW -lNR $(SYSLIBS)
 
 AK_Waveform : AK_Waveform.cc -lKS -lIEKG -lGKG -lCirc -lLB -lRRGW -lNR Globals.h IEKG.h KSParMap.h KSTools.h AK.h
@@ -63,7 +63,7 @@ NROBJS = NRElle.o NREllf.o NREllpi.o NRFactrl.o NRGammln.o NRIndexx.o \
 
 RRGWOBJS = RRGW.o
 
-KSOBJS = AAK.o AK.o GKTrajFast.o KSParMap.o KSTools.o
+KSOBJS = AAK.o AK.o GKTrajFast.o KSParMap.o KSTools.o AAKpy.o
 
 .INTERMEDIATE : $(CIRCOBJS) $(GKGOBJS) $(IEKGOBJS) $(LBOBJS) $(NROBJS) $(RRGWOBJS) $(KSOBJS)
 
@@ -93,7 +93,7 @@ KSOBJS = AAK.o AK.o GKTrajFast.o KSParMap.o KSTools.o
 -lRRGW : $(RRGWOBJS) Globals.h RRGW.h SWSH.h
 	$(AR) $(LIB)/libRRGW.a $(RRGWOBJS)
 
--lKS : $(KSOBJS) Globals.h AAK.h AK.h GKTrajFast.h KSParMap.h KSTools.h
+-lKS : $(KSOBJS) Globals.h AAK.h AK.h GKTrajFast.h KSParMap.h KSTools.h AAKpy.h
 	$(AR) $(LIB)/libKS.a $(KSOBJS)
 
 #############################################################################

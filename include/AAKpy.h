@@ -1,5 +1,5 @@
-#ifndef _WAVEFORM_H
-#define _WAVEFORM_H
+#ifndef _AAKPY_H
+#define _AAKPY_H
 
 #include <iostream>
 #include <math.h>
@@ -14,6 +14,6 @@
 #include "KSTools.h"
 #include "AAK.h"
 
-double AAKwave(SetPar *AAK, double *t, double *hI, double *hII);
+double AAKwave(SetPar &AAK, double *t, double *hI, double *hII);
 
 #endif
