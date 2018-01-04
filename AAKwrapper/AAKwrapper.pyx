@@ -35,13 +35,8 @@ cdef extern from "KSTools.h":
         double alpha    # initial azimuthal orientation
         double D        # source distance in Gpc
 
-cdef extern from "AAKwave.h":
+cdef extern from "AAKpy.h":
     double AAKwave(SetPar& AAK, double *t, double *hI, double *hII)
-
-def AAKdemo():
-    pars = {'length': 1000000, 'dt': 5., 'p': 5., 'T': 1., 'f': 2.e-3, 'T_fit': 1., 'mu': 1.e1, 'M': 1.e6, 's': 0.5, 'e': 0.1, 'iota': 0.524, 'gamma': 0., 'psi': 0., 'theta_S': 0.785, 'phi_S': 0.785, 'theta_K': 1.05, 'phi_K': 1.05, 'alpha': 0., 'D': 1.}
-
-    return AAK(pars)
 
 def AAK(pars = {}):
     cdef SetPar setpar
