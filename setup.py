@@ -13,10 +13,10 @@ from Cython.Build import cythonize
 import numpy
 
 # maybe need rpath links to shared libraries on Linux
-if platform.system() == 'Linux':
-    linkArgs = ['-Wl,-R{}/lib'.format(tempo2)]
-else:
-    linkArgs = []
+# if platform.system() == 'Linux':
+#    linkArgs = ['-Wl,-R{}/lib'.format(...)]
+#else:
+linkArgs = []
 
 setup(name = 'AAKwrapper',
       version = '0.1',
