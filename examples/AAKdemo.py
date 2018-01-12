@@ -1,7 +1,11 @@
 import numpy as np
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as pp
 
 import AAKwrapper
+
+import time
 
 print("Loading AAK from {}.".format(AAKwrapper.__path__))
 
@@ -27,7 +31,12 @@ pars = {'length': 1000000,
 
 print("Computing...")
 
+start = time.time()
+
 t, hI, hII = AAKwrapper.AAK(pars)
+
+end = time.time()
+print("Time taken: {}".format(end - start))
 
 print("Plotting...")
 
