@@ -20,13 +20,13 @@ ALLSRCS = $(CIRCSRC):$(EXECSRC):$(IEKGSRC):$(NRSRC):$(UTILSRC):$(KSSRC)
 
 VPATH = $(BIN):$(INC):$(LIB):$(ALLSRCS)
 
-CC = g++
+# CC = g++
 
 AR = ar rv
 
 SYSLIBS = -lm -lgsl -lgslcblas -lfftw3
 
-CFLAGS = -O3 -Wall -Wno-unused -Wno-uninitialized -Wno-deprecated 
+CFLAGS = -O3 -Wall -Wno-unused -Wno-uninitialized -Wno-deprecated -fPIC
 
 #############################################################################
 
