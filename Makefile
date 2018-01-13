@@ -26,7 +26,7 @@ AR = ar rv
 
 SYSLIBS = -lm -lgsl -lgslcblas -lfftw3
 
-CFLAGS = -O3 -Wall -Wno-unused -Wno-uninitialized -Wno-deprecated 
+CFLAGS = -O3 -Wall -Wno-unused -Wno-uninitialized -Wno-deprecated -fPIC
 
 #############################################################################
 
