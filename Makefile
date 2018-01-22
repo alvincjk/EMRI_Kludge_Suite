@@ -20,7 +20,7 @@ ALLSRCS = $(CIRCSRC):$(EXECSRC):$(IEKGSRC):$(NRSRC):$(UTILSRC):$(KSSRC)
 
 VPATH = $(BIN):$(INC):$(LIB):$(ALLSRCS)
 
-# CC = g++
+CC = g++
 
 AR = ar rv
 
