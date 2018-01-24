@@ -13,12 +13,10 @@
 #include <sstream>
 #include <string.h>
 
-#define G (6.6726e-11)
-#define C (299792458.)
-#define Msun (1.9889e30)
-#define SOLARMASSINSEC (G*Msun/(C*C*C))
-#define F_MIN (1.e-5)
-#define F_MAX (3.)
+#include "Constants.h"
+
+const double F_MIN = 1.e-5;
+const double F_MAX = 3.0;
 
 struct SetPar {
 
