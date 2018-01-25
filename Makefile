@@ -20,7 +20,17 @@ ALLSRCS = $(CIRCSRC):$(EXECSRC):$(IEKGSRC):$(NRSRC):$(UTILSRC):$(KSSRC)
 
 VPATH = $(BIN):$(INC):$(LIB):$(ALLSRCS)
 
+ifeq "$(shell which icc >/dev/null 2>&1; echo $$?)" "0" 
+COMPILER_TYPE=intel
+else ifeq "$(shell which g++ >/dev/null 2>&1; echo $$?)" "0"
+COMPILER_TYPE=gnu
+endif
+
+ifeq ($(COMPILER_TYPE),intel)
+CC = icpc
+else ifeq ($(COMPILER_TYPE),gnu) 
 CC = g++
+endif
 
 AR = ar rv
 

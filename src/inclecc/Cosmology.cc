@@ -7,12 +7,11 @@
 #include "NRCosmology.h"
 #include "Cosmology.h"
 
-#define CURVTOL (1e-16)
-#define SOLVETOL 1.e-10
-#define C (299792458.)
-#define pc (3.08567818585e16)
-#define G (6.6726e-11)
-#define ZTOL (1.e-10)
+#include "Constants.h"
+
+const double CURVTOL = 1e-16;
+const double SOLVETOL = 1e-10;
+const double ZTOL = 1e-10;
 
 Cosmology::Cosmology(Real hubble, Real OmegaM, Real OmegaL) : H0(hubble),Om(OmegaM),OL(OmegaL)
 {
