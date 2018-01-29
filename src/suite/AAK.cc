@@ -73,7 +73,7 @@ void PNevolution(double *t, double *e, double *v, double *M, double *S, double *
     }
     e_AK[j+1]=e_AK[j]+(1.5*edot-.5*edotm)*(dt_map[j-j0+1]-dt_map[j-j0]);
     v_AK[j+1]=v_AK[j]+(1.5*vdot-.5*vdotm)*(dt_map[j-j0+1]-dt_map[j-j0]);
-    if(e_AK[j+1]<0. || v_AK[j+1]<0. || isnan(e_AK[j+1]) || isnan(v_AK[j+1])){
+    if(e_AK[j+1]<0. || v_AK[j+1]<v_AK[j] || isnan(e_AK[j+1]) || isnan(v_AK[j+1])){
       if(j_max==j_max_temp) j_max=j;
       e_AK[j+1]=e_AK[j_max];
       v_AK[j+1]=v_AK[j_max];
@@ -114,7 +114,7 @@ void PNevolution(double *t, double *e, double *v, double *M, double *S, double *
     vdot=dvdt(v_AK[j],e_AK[j],coslam,mu,M0,S0);
     e_AK[j+1]=e_AK[j]+(1.5*edot-.5*edotm)*dt_large;
     v_AK[j+1]=v_AK[j]+(1.5*vdot-.5*vdotm)*dt_large;
-    if(e_AK[j+1]<0. || v_AK[j+1]<0. || isnan(e_AK[j+1]) || isnan(v_AK[j+1])){
+    if(e_AK[j+1]<0. || v_AK[j+1]<v_AK[j] || isnan(e_AK[j+1]) || isnan(v_AK[j+1])){
       if(j_max==j_max_temp) j_max=j;
       e_AK[j+1]=e_AK[j_max];
       v_AK[j+1]=v_AK[j_max];
@@ -134,14 +134,13 @@ void PNevolution(double *t, double *e, double *v, double *M, double *S, double *
     v_fit[j]=v_AK[j]+v_coeff[0]*dt+v_coeff[1]*dt2;
     M_fit[j]=M0+(M_coeff[0]*dt+M_coeff[1]*dt2)*SOLARMASSINSEC;
     S_fit[j]=S0+S_coeff[0]*dt+S_coeff[1]*dt2;
-    if(e_fit[j]<0. || v_fit[j]<0.){
+    if(e_fit[j]<0. || v_fit[j]<v_fit[max(j0,j-1)]){
       if(j_max==j_max_temp) j_max=j-1;
       e_fit[j]=e_fit[j_max];
       v_fit[j]=v_fit[j_max];
       M_fit[j]=M_fit[j_max];
       S_fit[j]=S_fit[j_max];
     }
-    if(v_fit[j]<v_fit[max(j0,j-1)]){fprintf(stderr,"Fitting error: p increasing\n"); exit(EXIT_FAILURE);}
   }
   j_max_temp=j_max;
   // ----------
