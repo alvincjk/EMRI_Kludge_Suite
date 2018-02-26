@@ -2,9 +2,9 @@
 
 **Version 0.2.0**
 
-This is a C/C++ suite that allows kludge waveforms for extreme-mass-ratio inspirals (EMRIs) to be generated with shared settings and parameters. The three waveforms included in the suite are the augmented analytic kludge (AAK) [1,2], the analytic kludge (AK) [3], and the numerical kludge (NK) [4].
+This is a C/C++ suite that allows kludge waveforms for extreme-mass-ratio inspirals (EMRIs) to be generated with shared settings and parameters. The three waveforms included in the suite are the augmented analytic kludge (AAK) [1,2], the analytic kludge (AK) [3], and the numerical kludge (NK) [4]. EMRI Kludge Suite is part of the Black Hole Perturbation Toolkit; for more information, visit http://bhptoolkit.org
 
-Running `make` will create the corresponding executables in the folder `./bin`:
+The GSL and FFTW libraries are required for compilation. Running `make` will create the corresponding executables in the folder `./bin`:
 
 - `AAK_Waveform`
 - `AK_Waveform`
@@ -22,11 +22,11 @@ will generate an AAK waveform with default settings and parameters. Three files 
 - `example_traj.dat` contains inspiral trajectory data (t, p/M, e, iota, E, L_z, Q)
 - `example_info.txt` contains additional information such as signal-to-noise ratio and waveform timing
 
-NEW IN VERSION 0.2.0: Automated backward integration for plunging orbits; adaptive fitting duration; improved speed and robustness.
+NEW IN VERSION 0.2.0: Improvements to AAK, e.g. automated backward integration for plunging orbits; adaptive fitting duration; better speed and robustness.
 
 Please check https://github.com/alvincjk/EMRI_Kludge_Suite for any version updates.
 
-&mdash; Alvin Chua, Dec 2017
+&mdash; Alvin Chua, Feb 2018
 
 ## Work in progress
 
