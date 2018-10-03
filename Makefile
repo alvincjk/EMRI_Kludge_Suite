@@ -46,7 +46,7 @@ CFLAGS = -O3 -Wall -Wno-unused -Wno-uninitialized -Wno-deprecated -fPIC
 
 all : AAK_Phase AAK_Waveform AK_Waveform NK_Waveform
 
-AAK_Phase : AAK_Phase.cc -lKS -lIEKG -lGKG -lCirc -lLB -lRRGW -lNR Globals.h GKTrajFast.h KSParMap.h KSTools.h AAKPhase.h AAKpy.h
+AAK_Phase : AAK_Phase.cc -lKS -lIEKG -lGKG -lCirc -lLB -lRRGW -lNR Globals.h GKTrajFast.h KSParMap.h KSTools.h AAK.h AAKPhase.h AAKpy.h
 	$(CC) $(EXECSRC)/AAK_Phase.cc -o $(BIN)/AAK_Phase $(CFLAGS) -I$(INC) -L$(LIB) -lKS -lIEKG -lCirc -lGKG -lLB -lRRGW -lNR $(SYSLIBS)
 
 AAK_Waveform : AAK_Waveform.cc -lKS -lIEKG -lGKG -lCirc -lLB -lRRGW -lNR Globals.h GKTrajFast.h KSParMap.h KSTools.h AAK.h AAKpy.h
