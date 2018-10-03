@@ -7,7 +7,9 @@
 #include <gsl/gsl_blas.h>
 #include <gsl/gsl_multiroots.h>
 #include <gsl/gsl_spline.h>
+#undef G
 #include <gsl/gsl_multifit.h>
+#define G (6.6726e-11)
 
 #include "IEKG.h"
 #include "KSParMap.h"

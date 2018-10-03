@@ -12,7 +12,9 @@
 #include <gsl/gsl_blas.h>
 #include <gsl/gsl_multiroots.h>
 #include <gsl/gsl_spline.h>
+#undef G
 #include <gsl/gsl_multifit.h>
+#define G (6.6726e-11)
 
 const double EulerGamma = 0.5772156649015329;
 const double PI2 = 9.86960440109;
