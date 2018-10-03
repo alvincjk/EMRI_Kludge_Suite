@@ -4,9 +4,7 @@
 #include <stdlib.h>
 #include <gsl/gsl_vector.h>
 #include <gsl/gsl_matrix.h>
-#undef C
 #include <gsl/gsl_blas.h>
-#define C (299792458.)
 #include <gsl/gsl_multiroots.h>
 #include <gsl/gsl_spline.h>
 #undef G

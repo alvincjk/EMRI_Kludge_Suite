@@ -8,14 +8,7 @@
 #include <stdlib.h>
 #include <math.h>
 
-#define G (6.6726e-11)
-#define C (299792458.)
-#define Msun (1.9889e30)
-#define SOLARMASSINSEC (G*Msun/(C*C*C))
-#define Gpc (1.02938e17)
-#define GPCINSEC (3.08567818585e25/C)
-#define year (31536000.)
-#define AUsec (499.004783702731)
+#include "Constants.h"
 
 double OmegaPhi(double v, double e, double cosiota, double s, double M);
 

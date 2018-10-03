@@ -6,17 +6,17 @@
 # File path (waveform will be output to <path>_wave.dat); takes string
 bin/example
 
-# End waveform at plunge and integrate backwards from initial point (only used by AAK_Waveform); takes bool
+# End waveform at plunge and integrate backwards from initial point (only used by AAK); takes bool
 true
 
 # Convert waveform to LISA response (defined in Cutler, 1998); takes bool
 false
 
 # Output inspiral trajectory (p/M,e,iota,E,L_z,Q) to <path>_traj.dat; takes bool
-true
+false
 
 # Output SNR (with default analytic eLISA noise curve defined in Amaro-Seoane et al., 2013) to <path>_info.txt; takes bool
-true
+false
 
 # Output waveform timing to <path>_info.txt; takes bool
 true
@@ -25,13 +25,13 @@ true
 # WAVEFORM PARAMETERS
 
 # length: Waveform points; takes int
-1000000
+1000
 
 # dt: Time step in seconds; takes double
-5.
+63072.
 
 # p/M: Initial semi-latus rectum; takes double
-5.
+6.
 
 
 # OPTIONAL WAVEFORM PARAMETERS
@@ -54,7 +54,7 @@ true
 # M: BH mass in solar masses; takes double
 1.e6
 
-# a/M: BH spin (=S/M^2); takes double
+# a/M: BH spin (= S/M^2 > 0, use iota to specify retrograde orbits); takes double
 0.5
 
 # e: Initial eccentricity; takes double

@@ -8,15 +8,11 @@
 #include <stdlib.h>
 #include <math.h>
 
-#define G (6.6726e-11)
-#define C (299792458.)
-#define Msun (1.9889e30)
-#define SOLARMASSINSEC (G*Msun/(C*C*C))
-#define Gpc (1.02938e17)
-#define GPCINSEC (3.08567818585e25/C)
-#define nt (620000)
-#define ndim (12)
-#define modes (40)
+#include "Constants.h"
+
+const int nt = 620000;
+const int ndim = 12;
+const int modes = 40;
 
 double ArcT(double down, double up);
 

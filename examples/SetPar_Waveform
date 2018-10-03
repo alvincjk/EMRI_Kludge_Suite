@@ -1,0 +1,92 @@
+# EMRI Kludge Suite: Settings/parameters
+
+
+# SETTINGS
+
+# File path (waveform will be output to <path>_wave.dat); takes string
+bin/example
+
+# End waveform at plunge and integrate backwards from initial point (only used by AAK); takes bool
+true
+
+# Convert waveform to LISA response (defined in Cutler, 1998); takes bool
+false
+
+# Output inspiral trajectory (p/M,e,iota,E,L_z,Q) to <path>_traj.dat; takes bool
+true
+
+# Output SNR (with default analytic eLISA noise curve defined in Amaro-Seoane et al., 2013) to <path>_info.txt; takes bool
+true
+
+# Output waveform timing to <path>_info.txt; takes bool
+true
+
+
+# WAVEFORM PARAMETERS
+
+# length: Waveform points; takes int
+1000000
+
+# dt: Time step in seconds; takes double
+5.184
+
+# p/M: Initial semi-latus rectum; takes double
+6.
+
+
+# OPTIONAL WAVEFORM PARAMETERS
+
+# T: Waveform duration in years (only used if dt is set negative, i.e. unspecified); takes double
+1.
+
+# f: Initial reference GW frequency in Hz (only used if p/M is set negative, i.e. unspecified); takes double
+2.e-3
+
+# T_fit: Maximum duration of local fit in radiation-reaction time steps M^2/mu (only used by AAK_Waveform); takes double
+1.
+
+
+# INTRINSIC PARAMETERS
+
+# mu: CO mass in solar masses; takes double
+1.e1
+
+# M: BH mass in solar masses; takes double
+1.e6
+
+# a/M: BH spin (= S/M^2 > 0, use iota to specify retrograde orbits); takes double
+0.5
+
+# e: Initial eccentricity; takes double
+0.1
+
+# iota: Inclination angle of L from S; takes double
+0.524
+
+# gamma: Initial angle of periapsis from LxS; takes double
+0.
+
+# psi: Initial true anomaly; takes double
+0.
+
+
+# EXTRINSIC PARAMETERS
+
+# theta_S: Initial source polar angle in ecliptic coordinates; takes double
+0.785
+
+# phi_S: Initial source azimuthal angle in ecliptic coordinates; takes double
+0.785
+
+# theta_K: Initial BH spin polar angle in ecliptic coordinates; takes double
+1.05
+
+# phi_K: Initial BH spin azimuthal angle in ecliptic coordinates; takes double
+1.05
+
+# alpha: Initial azimuthal orientation (defined by Eq.(18) in Barack & Cutler, 2004); takes double
+0.
+
+# D: Source distance in Gpc; takes double
+1.
+

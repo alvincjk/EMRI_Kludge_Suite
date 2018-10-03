@@ -8,6 +8,8 @@ TOP = .
 BIN = $(TOP)/bin
 INC = $(TOP)/include
 LIB = $(TOP)/lib
+PYBUILD = $(TOP)/build
+PYFILES = $(TOP)/AAKwrapper
 
 SRC = $(TOP)/src
 CIRCSRC = $(SRC)/circ
@@ -20,21 +22,34 @@ ALLSRCS = $(CIRCSRC):$(EXECSRC):$(IEKGSRC):$(NRSRC):$(UTILSRC):$(KSSRC)
 
 VPATH = $(BIN):$(INC):$(LIB):$(ALLSRCS)
 
+ifeq "$(shell which icc >/dev/null 2>&1; echo $$?)" "0" 
+COMPILER_TYPE=intel
+else ifeq "$(shell which g++ >/dev/null 2>&1; echo $$?)" "0"
+COMPILER_TYPE=gnu
+endif
+
+ifeq ($(COMPILER_TYPE),intel)
+CC = icpc
+else ifeq ($(COMPILER_TYPE),gnu) 
 CC = g++
+endif
 
 AR = ar rv
 
 SYSLIBS = -lm -lgsl -lgslcblas -lfftw3
 
-CFLAGS = -O3 -Wall -Wno-unused -Wno-uninitialized -Wno-deprecated 
+CFLAGS = -O3 -Wall -Wno-unused -Wno-uninitialized -Wno-deprecated -fPIC
 
 #############################################################################
 
 # Executable files
 
-all : AAK_Waveform AK_Waveform NK_Waveform
+all : AAK_Phase AAK_Waveform AK_Waveform NK_Waveform
 
-AAK_Waveform : AAK_Waveform.cc -lKS -lIEKG -lGKG -lCirc -lLB -lRRGW -lNR Globals.h GKTrajFast.h KSParMap.h KSTools.h AAK.h
+AAK_Phase : AAK_Phase.cc -lKS -lIEKG -lGKG -lCirc -lLB -lRRGW -lNR Globals.h GKTrajFast.h KSParMap.h KSTools.h AAK.h AAKPhase.h AAKpy.h
+	$(CC) $(EXECSRC)/AAK_Phase.cc -o $(BIN)/AAK_Phase $(CFLAGS) -I$(INC) -L$(LIB) -lKS -lIEKG -lCirc -lGKG -lLB -lRRGW -lNR $(SYSLIBS)
+
+AAK_Waveform : AAK_Waveform.cc -lKS -lIEKG -lGKG -lCirc -lLB -lRRGW -lNR Globals.h GKTrajFast.h KSParMap.h KSTools.h AAK.h AAKpy.h
 	$(CC) $(EXECSRC)/AAK_Waveform.cc -o $(BIN)/AAK_Waveform $(CFLAGS) -I$(INC) -L$(LIB) -lKS -lIEKG -lCirc -lGKG -lLB -lRRGW -lNR $(SYSLIBS)
 
 AK_Waveform : AK_Waveform.cc -lKS -lIEKG -lGKG -lCirc -lLB -lRRGW -lNR Globals.h IEKG.h KSParMap.h KSTools.h AK.h
@@ -63,7 +78,7 @@ NROBJS = NRElle.o NREllf.o NREllpi.o NRFactrl.o NRGammln.o NRIndexx.o \
 
 RRGWOBJS = RRGW.o
 
-KSOBJS = AAK.o AK.o GKTrajFast.o KSParMap.o KSTools.o
+KSOBJS = AAK.o AAKPhase.o AK.o GKTrajFast.o KSParMap.o KSTools.o AAKpy.o
 
 .INTERMEDIATE : $(CIRCOBJS) $(GKGOBJS) $(IEKGOBJS) $(LBOBJS) $(NROBJS) $(RRGWOBJS) $(KSOBJS)
 
@@ -93,7 +108,7 @@ KSOBJS = AAK.o AK.o GKTrajFast.o KSParMap.o KSTools.o
 -lRRGW : $(RRGWOBJS) Globals.h RRGW.h SWSH.h
 	$(AR) $(LIB)/libRRGW.a $(RRGWOBJS)
 
--lKS : $(KSOBJS) Globals.h AAK.h AK.h GKTrajFast.h KSParMap.h KSTools.h
+-lKS : $(KSOBJS) Globals.h AAK.h AAKPhase.h AK.h GKTrajFast.h KSParMap.h KSTools.h AAKpy.h
 	$(AR) $(LIB)/libKS.a $(KSOBJS)
 
 #############################################################################
@@ -105,4 +120,7 @@ KSOBJS = AAK.o AK.o GKTrajFast.o KSParMap.o KSTools.o
 clean : dummy
 	$(RM) $(BIN)/*
 	$(RM) $(LIB)/*
-
+	$(RM) -r $(PYBUILD)/*
+	$(RM) -r $(PYFILES)/__pycache__
+	$(RM) $(PYFILES)/*.cpp
+	$(RM) $(PYFILES)/*.so

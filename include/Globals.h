@@ -25,16 +25,9 @@ typedef long double Real;
 Illegal value!
 #endif
 
-#define MSUN_CM (147661.2814476609)
-#define C (299792458.)
-#define MSUN_SEC (MSUN_CM/(100.*C))
-#define G (6.6726e-11)
-#define YEAR (31536000.) /* One year in seconds. */
-#define Msun (1.9889e30)
-#define SOLARMASSINSEC (G*Msun/(C*C*C))
-#define AU (1.4959787066e11)
-#define pc (3.08567818585e16)
-#define DIM_BASIS (5) /* Define the dimension of the basis of intrinsic waveforms - 5 for pure quadrupole. */
+#include "Constants.h"
+
+const int DIM_BASIS = 5; /* Define the dimension of the basis of intrinsic waveforms - 5 for pure quadrupole. */
 
 typedef complex<Real> Complex;
 const Complex II = Complex(0.,1.);
