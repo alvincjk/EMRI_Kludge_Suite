@@ -32,3 +32,6 @@
 bin/*
 lib/*
 *~
+build/*
+AAKwrapper/AAKwrapper.cpp
+AAKwrapper/__pycache__/*

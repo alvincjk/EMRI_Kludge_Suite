@@ -1,17 +1,12 @@
-import numpy as np
-import matplotlib
-matplotlib.use('Agg')
-import matplotlib.pyplot as pp
-
 import AAKwrapper
-
-import time
 
 print("Loading AAK from {}.".format(AAKwrapper.__path__))
 
-pars = {'length': 1000000,
-        'dt': 5.,
-        'p': 5.,
+pars = {'backint': True,
+        'LISA': False,
+        'length': 1000000,
+        'dt': 5.184,
+        'p': 6.,
         'T': 1.,
         'f': 2.e-3,
         'T_fit': 1.,
@@ -29,22 +24,36 @@ pars = {'length': 1000000,
         'alpha': 0.,
         'D': 1.}
 
-print("Computing...")
+print("Computing waveform...")
 
-start = time.time()
+t, hI, hII, timing = AAKwrapper.wave(pars)
 
-t, hI, hII = AAKwrapper.AAK(pars)
+print("Time taken: {}".format(timing))
 
-end = time.time()
-print("Time taken: {}".format(end - start))
+pars = {'backint': True,
+        'LISA': False,
+        'length': 1000,
+        'dt': 63072.,
+        'p': 6.,
+        'T': 1.,
+        'f': 2.e-3,
+        'T_fit': 1.,
+        'mu': 1.e1,
+        'M': 1.e6,
+        's': 0.5,
+        'e': 0.1,
+        'iota': 0.524,
+        'gamma': 0.,
+        'psi': 0.,
+        'theta_S': 0.785,
+        'phi_S': 0.785,
+        'theta_K': 1.05,
+        'phi_K': 1.05,
+        'alpha': 0.,
+        'D': 1.}
 
-print("Plotting...")
+print("Computing phases...")
 
-pp.ioff()
-fig = pp.figure()
-pp.plot(t[:10000], hI[:10000])
-pp.plot(t[:10000], hII[:10000])
-pp.savefig("AAKdemo.pdf")
-pp.close(fig)
+t, phase_r, phase_theta, phase_phi, omega_r, omega_theta, omega_phi, timing = AAKwrapper.phase(pars)
 
-print("All done. Please see {}.".format('AAKdemo.pdf'))
+print("Time taken: {}".format(timing))

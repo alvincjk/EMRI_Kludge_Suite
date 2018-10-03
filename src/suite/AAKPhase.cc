@@ -5,25 +5,12 @@
 
 #include "IEKG.h"
 #include "KSParMap.h"
+#include "AAK.h"
 #include "AAKPhase.h"
 
 using namespace std;
 
-
-// ----- magnitude of azimuthal angular frequency for prograde/retrograde orbits -----
-double OmegaPhi(double v, double e, double cosiota, double s, double M){
-
-  double omegaphi;
-  if(cosiota>0) omegaphi=dphidm(v,e,cosiota,s)/dtdm(v,e,cosiota,s)/M;
-  else omegaphi=dphidm(v,e,-cosiota,-s)/dtdm(v,e,-cosiota,-s)/M;
-
-  return omegaphi;
-
-}
-// ----------
-
-
-void PNevolution(double *t, double *e, double *v, double *M, double *S, double *gim, double *Phi, double *alp, double *nu, double *gimdotvec, double *Phidotvec, double *alpdotvec, double timestep, int vlength, double *par, double e_traj[], double v_map[], double M_phys, double M_map[], double S_phys, double S_map[], double dt_map[], int steps, int *i_plunge, int *i_buffer, bool backint){
+void PNevolutionPhase(double *t, double *e, double *v, double *M, double *S, double *gim, double *Phi, double *alp, double *nu, double *gimdotvec, double *Phidotvec, double *alpdotvec, double timestep, int vlength, double *par, double e_traj[], double v_map[], double M_phys, double M_map[], double S_phys, double S_map[], double dt_map[], int steps, int *i_plunge, int *i_buffer, bool backint){
 
   double mu=par[0];
   double M0=par[1];
@@ -355,7 +342,7 @@ void GenPhase(double *t, double *phase_r, double *phase_theta, double *phase_phi
   alpdotvec=(double *)malloc((vlength+1)*sizeof(double));
 
   int i_plunge,i_buffer;
-  PNevolution(tvec,evec,vvec,Mvec,Svec,gimvec,Phivec,alpvec,nuvec,gimdotvec,Phidotvec,alpdotvec,timestep,vlength,par,e_traj,v_map,M_phys,M_map,S_phys,S_map,dt_map,steps,&i_plunge,&i_buffer,backint);
+  PNevolutionPhase(tvec,evec,vvec,Mvec,Svec,gimvec,Phivec,alpvec,nuvec,gimdotvec,Phidotvec,alpdotvec,timestep,vlength,par,e_traj,v_map,M_phys,M_map,S_phys,S_map,dt_map,steps,&i_plunge,&i_buffer,backint);
 
   for(int i=0;i<vlength;i++){
   	t[i]=tvec[i];

@@ -13,10 +13,10 @@ true
 false
 
 # Output inspiral trajectory (p/M,e,iota,E,L_z,Q) to <path>_traj.dat; takes bool
-false
+true
 
 # Output SNR (with default analytic eLISA noise curve defined in Amaro-Seoane et al., 2013) to <path>_info.txt; takes bool
-false
+true
 
 # Output waveform timing to <path>_info.txt; takes bool
 true
@@ -25,10 +25,10 @@ true
 # WAVEFORM PARAMETERS
 
 # length: Waveform points; takes int
-1000
+1000000
 
 # dt: Time step in seconds; takes double
-63072.
+5.184
 
 # p/M: Initial semi-latus rectum; takes double
 6.
@@ -54,7 +54,7 @@ true
 # M: BH mass in solar masses; takes double
 1.e6
 
-# a/M: BH spin (=S/M^2); takes double
+# a/M: BH spin (= S/M^2 > 0, use iota to specify retrograde orbits); takes double
 0.5
 
 # e: Initial eccentricity; takes double
