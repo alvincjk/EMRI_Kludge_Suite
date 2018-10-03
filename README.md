@@ -47,12 +47,12 @@ Please check https://github.com/alvincjk/EMRI_Kludge_Suite for any version updat
 ## Authors
 
 **Alvin Chua**  
-Jet Propulsion Laboratory
-E-mail: `alvin.j.chua@jpl.nasa.gov`
+Jet Propulsion Laboratory  
+`alvin.j.chua@jpl.nasa.gov`
 
 **Jonathan Gair**  
-School of Mathematics, University of Edinburgh
-E-mail: `j.gair@ed.ac.uk`
+School of Mathematics, University of Edinburgh  
+`j.gair@ed.ac.uk`
 
 The EMRI Kludge Suite is also based on code written by Leor Barack (for the AK) and Scott Hughes (for the NK). The Python wrapper for the AAK is provided by Michele Vallisneri.
 
