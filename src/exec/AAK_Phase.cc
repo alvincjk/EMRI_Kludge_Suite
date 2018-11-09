@@ -58,7 +58,7 @@ int main(int argc, char *argv[]){
     dt_map[i-1]=traj3[i].t*SOLARMASSINSEC*AAK.M*AAK.M/AAK.mu;
   }
 
-  double *t,*phase_r,*phase_theta,*phase_phi,*omega_r,*omega_theta,*omega_phi;
+  double *t,*phase_r,*phase_theta,*phase_phi,*omega_r,*omega_theta,*omega_phi,*eccentricity;
   t=(double*)malloc(AAK.length*sizeof(double));
   phase_r=(double*)malloc(AAK.length*sizeof(double));
   phase_theta=(double*)malloc(AAK.length*sizeof(double));
@@ -66,7 +66,8 @@ int main(int argc, char *argv[]){
   omega_r=(double*)malloc(AAK.length*sizeof(double));
   omega_theta=(double*)malloc(AAK.length*sizeof(double));
   omega_phi=(double*)malloc(AAK.length*sizeof(double));
-  GenPhase(t,phase_r,phase_theta,phase_phi,omega_r,omega_theta,omega_phi,AAK.dt,AAK.length,e_traj,v_map,AAK.M,M_map,AAK.mu,AAK.s,s_map,AAK.D,AAK.iota,AAK.gamma,Phi,AAK.theta_S,AAK.phi_S,AAK.alpha,AAK.theta_K,AAK.phi_K,dt_map,steps,AAK.backint,AAK.LISA,false);
+  eccentricity=(double*)malloc(AAK.length*sizeof(double));
+  GenPhase(t,phase_r,phase_theta,phase_phi,omega_r,omega_theta,omega_phi,eccentricity,AAK.dt,AAK.length,e_traj,v_map,AAK.M,M_map,AAK.mu,AAK.s,s_map,AAK.D,AAK.iota,AAK.gamma,Phi,AAK.theta_S,AAK.phi_S,AAK.alpha,AAK.theta_K,AAK.phi_K,dt_map,steps,AAK.backint,AAK.LISA,false);
 
   ticks=clock()-ticks;
   double secs=((double)ticks)/CLOCKS_PER_SEC;
@@ -79,7 +80,7 @@ int main(int argc, char *argv[]){
   strcat(filename,"_wave.dat");
   if(CheckFile(filename)==1) fprintf(stderr,"Output warning: Overwriting %s\n",filename);
   file=fopen(filename,"w");
-  for(int i=0;i<AAK.length;i++) fprintf(file,"%8.6e %8.6e %8.6e %8.6e %8.6e %8.6e %8.6e\n",t[i],phase_r[i],phase_theta[i],phase_phi[i],omega_r[i],omega_theta[i],omega_phi[i]);
+  for(int i=0;i<AAK.length;i++) fprintf(file,"%8.6e %8.6e %8.6e %8.6e %8.6e %8.6e %8.6e %8.6e\n",t[i],phase_r[i],phase_theta[i],phase_phi[i],omega_r[i],omega_theta[i],omega_phi[i],eccentricity[i]);
   fclose(file);
 
   if(AAK.timing==true){
@@ -99,6 +100,7 @@ int main(int argc, char *argv[]){
   free(omega_r);
   free(omega_theta);
   free(omega_phi);
+  free(eccentricity);
 
 }
 

@@ -16,6 +16,6 @@
 
 double AAKwave(SetPar &AAK, double *t, double *hI, double *hII);
 
-double AAKphase(SetPar &AAK, double *t, double *phase_r, double *phase_theta, double *phase_phi, double *omega_r, double *omega_theta, double *omega_phi);
+double AAKphase(SetPar &AAK, double *t, double *phase_r, double *phase_theta, double *phase_phi, double *omega_r, double *omega_theta, double *omega_phi, double *eccentricity);
 
 #endif

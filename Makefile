@@ -8,7 +8,6 @@ TOP = .
 BIN = $(TOP)/bin
 INC = $(TOP)/include
 LIB = $(TOP)/lib
-PYBUILD = $(TOP)/build
 PYFILES = $(TOP)/AAKwrapper
 
 SRC = $(TOP)/src
@@ -120,7 +119,9 @@ KSOBJS = AAK.o AAKPhase.o AK.o GKTrajFast.o KSParMap.o KSTools.o AAKpy.o
 clean : dummy
 	$(RM) $(BIN)/*
 	$(RM) $(LIB)/*
-	$(RM) -r $(PYBUILD)/*
 	$(RM) -r $(PYFILES)/__pycache__
 	$(RM) $(PYFILES)/*.cpp
 	$(RM) $(PYFILES)/*.so
+	$(RM) -rf AAKwrapper.egg-info
+	$(RM) -rf build
+	$(RM) -rf dist

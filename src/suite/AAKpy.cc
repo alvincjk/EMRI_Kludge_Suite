@@ -48,7 +48,7 @@ double AAKwave(SetPar &AAK, double *t, double *hI, double *hII){
 
 }
 
-double AAKphase(SetPar &AAK, double *t, double *phase_r, double *phase_theta, double *phase_phi, double *omega_r, double *omega_theta, double *omega_phi){
+double AAKphase(SetPar &AAK, double *t, double *phase_r, double *phase_theta, double *phase_phi, double *omega_r, double *omega_theta, double *omega_phi, double *eccentricity){
 
   clock_t ticks=clock();
 
@@ -78,7 +78,7 @@ double AAKphase(SetPar &AAK, double *t, double *phase_r, double *phase_theta, do
     dt_map[i-1]=traj3[i].t*SOLARMASSINSEC*AAK.M*AAK.M/AAK.mu;
   }
 
-  GenPhase(t,phase_r,phase_theta,phase_phi,omega_r,omega_theta,omega_phi,AAK.dt,AAK.length,e_traj,v_map,AAK.M,M_map,AAK.mu,AAK.s,s_map,AAK.D,AAK.iota,AAK.gamma,Phi,AAK.theta_S,AAK.phi_S,AAK.alpha,AAK.theta_K,AAK.phi_K,dt_map,steps,AAK.backint,AAK.LISA,false);
+  GenPhase(t,phase_r,phase_theta,phase_phi,omega_r,omega_theta,omega_phi,eccentricity,AAK.dt,AAK.length,e_traj,v_map,AAK.M,M_map,AAK.mu,AAK.s,s_map,AAK.D,AAK.iota,AAK.gamma,Phi,AAK.theta_S,AAK.phi_S,AAK.alpha,AAK.theta_K,AAK.phi_K,dt_map,steps,AAK.backint,AAK.LISA,false);
 
   ticks=clock()-ticks;
   return ((double)ticks)/CLOCKS_PER_SEC;

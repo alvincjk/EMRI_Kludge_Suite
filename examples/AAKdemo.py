@@ -54,6 +54,6 @@ pars = {'backint': True,
 
 print("Computing phases...")
 
-t, phase_r, phase_theta, phase_phi, omega_r, omega_theta, omega_phi, timing = AAKwrapper.phase(pars)
+t, phase_r, phase_theta, phase_phi, omega_r, omega_theta, omega_phi, eccentricity, timing = AAKwrapper.phase(pars)
 
 print("Time taken: {}".format(timing))
