@@ -23,7 +23,7 @@ The other template file `./examples/SetPar_Phase` contains default settings and 
 
 Running `bin/AAK_Phase examples/SetPar_Phase` will create two files in `./bin`:
 
-- `example_wave.dat` contains phase/trajectory data (t, phase_r, phase_theta, phase_phi, omega_r, omega_theta, omega_phi, e)
+- `example_wave.dat` contains phase data (t, phase_r, phase_theta, phase_phi, omega_r, omega_theta, omega_phi, e)
 - `example_info.txt` contains timing information
 
 Python support is also available for the AAK waveform and phases. The `AAKwrapper` module is installed by running `python setup.py install`; see the file `./examples/AAKdemo.py` for example usage.
