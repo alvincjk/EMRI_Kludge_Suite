@@ -1,10 +1,10 @@
 # EMRI Kludge Suite
 
-**Version 0.3.0**
+**Version 0.3.1**
 
 This is a C/C++ suite that allows kludge waveforms for extreme-mass-ratio inspirals (EMRIs) to be generated with shared settings and parameters. The three waveforms included in the suite are the augmented analytic kludge (AAK) [1,2], the analytic kludge (AK) [3], and the numerical kludge (NK) [4]. EMRI Kludge Suite is part of the Black Hole Perturbation Toolkit; visit http://bhptoolkit.org for more information.
 
-The GSL and FFTW libraries are required for compilation. Running `make` will create the following executables in the folder `./bin`:
+The GSL and FFTW libraries are required for compilation. Clean up any previous installation first with `make clean`. Running `make` will create the following executables in the folder `./bin`:
 
 - `AK_Waveform`
 - `NK_Waveform`
@@ -23,16 +23,18 @@ The other template file `./examples/SetPar_Phase` contains default settings and 
 
 Running `bin/AAK_Phase examples/SetPar_Phase` will create two files in `./bin`:
 
-- `example_wave.dat` contains phase data (t, phase_r, phase_theta, phase_phi, omega_r, omega_theta, omega_phi)
+- `example_wave.dat` contains phase data (t, phase_r, phase_theta, phase_phi, omega_r, omega_theta, omega_phi, eccentricity)
 - `example_info.txt` contains timing information
 
 Python support is also available for the AAK waveform and phases. The `AAKwrapper` module is installed by running `python setup.py install`; see the file `./examples/AAKdemo.py` for example usage.
+
+NEW IN VERSION 0.3.1: Added eccentricity output to phase executable.
 
 NEW IN VERSION 0.3.0: Executable for fast phase/frequency generation; Python wrapper and demo.
 
 Please check https://github.com/alvincjk/EMRI_Kludge_Suite for any version updates.
 
-&mdash; Alvin Chua, Oct 2018
+&mdash; Alvin Chua, Nov 2018
 
 ## Work in progress
 
