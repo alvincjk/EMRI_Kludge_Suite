@@ -22,13 +22,9 @@ setup(name = 'AAKwrapper',
 
       # author = 'Michele Vallisneri',
       # author_email = 'vallis@vallis.org',
-      # url = 'https://github.com/ajchua/libstempo',
 
       packages = ['AAKwrapper'],
       package_dir = {'AAKwrapper': 'AAKwrapper'},
-      # package_data = {'libstempo': ['data/*', 'ecc_vs_nharm.txt']},
-
-      # py_modules = ['libstempo.like','libstempo.multinest','libstempo.emcee'],
 
       ext_modules = [Extension('AAKwrapper/_AAKwrapper',['AAKwrapper/AAKwrapper.i'],
                                language = 'c++',
