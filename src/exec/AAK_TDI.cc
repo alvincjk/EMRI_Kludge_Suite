@@ -3,12 +3,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <fftw3.h>
 
 #include "Globals.h"
 #include "GKTrajFast.h"
 #include "KSParMap.h"
 #include "KSTools.h"
-#include "AAKPhase.h"
+#include "AAKTDI.h"
 
 int main(int argc, char *argv[]){
 
@@ -29,7 +30,7 @@ int main(int argc, char *argv[]){
   if(LoadSetPar(&AAK,AAK_par)==0) return 0;
   // ----------
 
-  // ----- generate AAK phases and frequencies -----
+  // ----- generate AAK waveform -----
   clock_t ticks=clock();
 
   GKTrajFast gktraj3(cos(AAK.iota),AAK.s);
@@ -58,16 +59,15 @@ int main(int argc, char *argv[]){
     dt_map[i-1]=traj3[i].t*SOLARMASSINSEC*AAK.M*AAK.M/AAK.mu;
   }
 
-  double *t,*phase_r,*phase_theta,*phase_phi,*omega_r,*omega_theta,*omega_phi,*eccentricity;
-  t=(double*)malloc(AAK.length*sizeof(double));
-  phase_r=(double*)malloc(AAK.length*sizeof(double));
-  phase_theta=(double*)malloc(AAK.length*sizeof(double));
-  phase_phi=(double*)malloc(AAK.length*sizeof(double));
-  omega_r=(double*)malloc(AAK.length*sizeof(double));
-  omega_theta=(double*)malloc(AAK.length*sizeof(double));
-  omega_phi=(double*)malloc(AAK.length*sizeof(double));
-  eccentricity=(double*)malloc(AAK.length*sizeof(double));
-  GenPhase(t,phase_r,phase_theta,phase_phi,omega_r,omega_theta,omega_phi,eccentricity,AAK.dt,AAK.length,e_traj,v_map,AAK.M,M_map,AAK.mu,AAK.s,s_map,AAK.D,AAK.iota,AAK.gamma,Phi,AAK.theta_S,AAK.phi_S,AAK.alpha,AAK.theta_K,AAK.phi_K,dt_map,steps,AAK.backint,false,false);
+  double *f, *Xf_r,*Xf_im,*Yf_r,*Yf_im,*Zf_r,*Zf_im;
+  f=(double*)calloc((AAK.length+1)/2,sizeof(double));
+  Xf_r=(double*)calloc((AAK.length+1)/2,sizeof(double));
+  Xf_im=(double*)calloc((AAK.length+1)/2,sizeof(double));
+  Yf_r=(double*)calloc((AAK.length+1)/2,sizeof(double));
+  Yf_im=(double*)calloc((AAK.length+1)/2,sizeof(double));
+  Zf_r=(double*)calloc((AAK.length+1)/2,sizeof(double));
+  Zf_im=(double*)calloc((AAK.length+1)/2,sizeof(double));
+  GenTDI(f,Xf_r,Xf_im,Yf_r,Yf_im,Zf_r,Zf_im,AAK.dt,AAK.length,e_traj,v_map,AAK.M,M_map,AAK.mu,AAK.s,s_map,AAK.D,AAK.iota,AAK.gamma,Phi,AAK.theta_S,AAK.phi_S,AAK.alpha,AAK.theta_K,AAK.phi_K,dt_map,steps,AAK.backint,false,false);
 
   ticks=clock()-ticks;
   double secs=((double)ticks)/CLOCKS_PER_SEC;
@@ -80,7 +80,7 @@ int main(int argc, char *argv[]){
   strcat(filename,"_wave.dat");
   if(CheckFile(filename)==1) fprintf(stderr,"Output warning: Overwriting %s\n",filename);
   file=fopen(filename,"w");
-  for(int i=0;i<AAK.length;i++) fprintf(file,"%8.6e %8.6e %8.6e %8.6e %8.6e %8.6e %8.6e %8.6e\n",t[i],phase_r[i],phase_theta[i],phase_phi[i],omega_r[i],omega_theta[i],omega_phi[i],eccentricity[i]);
+  for(int i=0;i<(AAK.length+1)/2;i++) fprintf(file,"%14.12e %14.12e %14.12e %14.12e %14.12e %14.12e %14.12e\n",f[i],Xf_r[i],Xf_im[i],Yf_r[i],Yf_im[i],Zf_r[i],Zf_im[i]);
   fclose(file);
 
   if(AAK.timing==true){
@@ -94,13 +94,12 @@ int main(int argc, char *argv[]){
   // ----------
 
   free(traj3);
-  free(phase_r);
-  free(phase_theta);
-  free(phase_phi);
-  free(omega_r);
-  free(omega_theta);
-  free(omega_phi);
-  free(eccentricity);
+  free(f);
+  free(Xf_r);
+  free(Xf_im);
+  free(Yf_r);
+  free(Yf_im);
+  free(Zf_r);
+  free(Zf_im);
 
 }
-

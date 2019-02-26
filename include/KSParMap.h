@@ -59,5 +59,7 @@ void PolyFit(double *coeff,double *x,double *y,int n);
 
 void RotCoeff(double rot[],double iota,double theta_S,double phi_S,double theta_K,double phi_K,double alpha);
 
+void EccentricLISAMotion(float kappa0, float lambda0, double t, double* R, double** q, double** n);
+
 #endif
 

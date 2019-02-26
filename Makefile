@@ -43,10 +43,16 @@ CFLAGS = -O3 -Wall -Wno-unused -Wno-uninitialized -Wno-deprecated -fPIC
 
 # Executable files
 
-all : AAK_Phase AAK_Waveform AK_Waveform NK_Waveform
+all : AAK_Phase AAK_TDI AK_TDI AAK_Waveform AK_Waveform NK_Waveform
 
 AAK_Phase : AAK_Phase.cc -lKS -lIEKG -lGKG -lCirc -lLB -lRRGW -lNR Globals.h GKTrajFast.h KSParMap.h KSTools.h AAK.h AAKPhase.h AAKpy.h
 	$(CC) $(EXECSRC)/AAK_Phase.cc -o $(BIN)/AAK_Phase $(CFLAGS) -I$(INC) -L$(LIB) -lKS -lIEKG -lCirc -lGKG -lLB -lRRGW -lNR $(SYSLIBS)
+
+AAK_TDI : AAK_TDI.cc -lKS -lIEKG -lGKG -lCirc -lLB -lRRGW -lNR Globals.h GKTrajFast.h KSParMap.h KSTools.h AAKTDI.h AAKpy.h
+	$(CC) $(EXECSRC)/AAK_TDI.cc -o $(BIN)/AAK_TDI $(CFLAGS) -I$(INC) -L$(LIB) -lKS -lIEKG -lCirc -lGKG -lLB -lRRGW -lNR $(SYSLIBS)
+
+AK_TDI : AK_TDI.cc -lKS -lIEKG -lGKG -lCirc -lLB -lRRGW -lNR Globals.h IEKG.h KSParMap.h KSTools.h AKTDI.h AAKpy.h
+	$(CC) $(EXECSRC)/AK_TDI.cc -o $(BIN)/AK_TDI $(CFLAGS) -I$(INC) -L$(LIB) -lKS -lIEKG -lCirc -lGKG -lLB -lRRGW -lNR $(SYSLIBS)
 
 AAK_Waveform : AAK_Waveform.cc -lKS -lIEKG -lGKG -lCirc -lLB -lRRGW -lNR Globals.h GKTrajFast.h KSParMap.h KSTools.h AAK.h AAKpy.h
 	$(CC) $(EXECSRC)/AAK_Waveform.cc -o $(BIN)/AAK_Waveform $(CFLAGS) -I$(INC) -L$(LIB) -lKS -lIEKG -lCirc -lGKG -lLB -lRRGW -lNR $(SYSLIBS)
@@ -77,7 +83,7 @@ NROBJS = NRElle.o NREllf.o NREllpi.o NRFactrl.o NRGammln.o NRIndexx.o \
 
 RRGWOBJS = RRGW.o
 
-KSOBJS = AAK.o AAKPhase.o AK.o GKTrajFast.o KSParMap.o KSTools.o AAKpy.o
+KSOBJS = AAK.o AAKPhase.o AAKTDI.o AK.o AKTDI.o GKTrajFast.o KSParMap.o KSTools.o AAKpy.o
 
 .INTERMEDIATE : $(CIRCOBJS) $(GKGOBJS) $(IEKGOBJS) $(LBOBJS) $(NROBJS) $(RRGWOBJS) $(KSOBJS)
 
@@ -107,7 +113,7 @@ KSOBJS = AAK.o AAKPhase.o AK.o GKTrajFast.o KSParMap.o KSTools.o AAKpy.o
 -lRRGW : $(RRGWOBJS) Globals.h RRGW.h SWSH.h
 	$(AR) $(LIB)/libRRGW.a $(RRGWOBJS)
 
--lKS : $(KSOBJS) Globals.h AAK.h AAKPhase.h AK.h GKTrajFast.h KSParMap.h KSTools.h AAKpy.h
+-lKS : $(KSOBJS) Globals.h AAK.h AAKPhase.h AAKTDI.h AK.h AKTDI.h GKTrajFast.h KSParMap.h KSTools.h AAKpy.h
 	$(AR) $(LIB)/libKS.a $(KSOBJS)
 
 #############################################################################

@@ -1,4 +1,4 @@
-# EMRI Kludge Suite: Settings/parameters for AAK/AK/NK_Waveform
+# EMRI Kludge Suite: Settings/parameters for AAK/AK_TDI
 
 
 # SETTINGS
@@ -7,16 +7,16 @@
 bin/example
 
 # End waveform at plunge and integrate backwards from initial point (only used by AAK); takes bool
-true
-
-# Convert waveform to LISA response (defined in Cutler, 1998); takes bool
 false
 
-# Output inspiral trajectory (p/M,e,iota,E,L_z,Q) to <path>_traj.dat; takes bool
-true
+# Convert waveform to LISA response (defined in Cutler, 1998); NOT USED
+false
 
-# Output SNR (with default analytic eLISA noise curve defined in Amaro-Seoane et al., 2013) to <path>_info.txt; takes bool
-true
+# Output inspiral trajectory (p/M,e,iota,E,L_z,Q) to <path>_traj.dat; NOT USED
+false
+
+# Output SNR (with default analytic eLISA noise curve defined in Amaro-Seoane et al., 2013) to <path>_info.txt; NOT USED
+false
 
 # Output waveform timing to <path>_info.txt; takes bool
 true
@@ -31,7 +31,7 @@ true
 5.184
 
 # p/M: Initial semi-latus rectum; takes double
-6.
+8.
 
 
 # OPTIONAL WAVEFORM PARAMETERS

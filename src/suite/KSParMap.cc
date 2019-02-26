@@ -573,3 +573,25 @@ void RotCoeff(double rot[],double iota,double theta_S,double phi_S,double theta_
 
 }
 
+void EccentricLISAMotion(float kappa0, float lambda0, double t, double* R, double** q, double** n){
+	double Omega = 2.*M_PI*3.1709791983764586e-8;
+   	double alpha = Omega*t + kappa0;
+	double xi[3];
+	xi[0] = lambda0;
+	xi[1] = lambda0 + 2.0*M_PI/3.0;
+	xi[2] = lambda0 + 4.0*M_PI/3.0;
+	double RAU = AUsec;
+	R[0] = RAU*cos(alpha);
+	R[1] = RAU*sin(alpha);
+	R[2] = 0;
+	for(int i=0; i<3; i++){ // loop over s/c
+    	q[i][0] = ( sin(alpha)*cos(alpha)*sin(xi[i]) - (1.+ sin(alpha)*sin(alpha))*cos(xi[i])  )/(2.0*sqrt(3.));
+        q[i][1] = ( sin(alpha)*cos(alpha)*cos(xi[i]) - (1.+ cos(alpha)*cos(alpha))*sin(xi[i])  )/(2.0*sqrt(3.));
+        q[i][2] = -0.5*cos(alpha - xi[i]);
+	}
+	for(int i=0; i<3; i++){ // links: 1st index - s/c, 2nd index - coordinates
+        n[0][i] = q[1][i] - q[2][i];
+		n[1][i] = q[2][i] - q[0][i];
+		n[2][i] = q[0][i] - q[1][i];
+	}
+}

@@ -41,6 +41,12 @@ cdef extern from "AAKpy.h":
 cdef extern from "AAKpy.h":
     double AAKphase(SetPar &AAK, double *t, double *phase_r, double *phase_theta, double *phase_phi, double *omega_r, double *omega_theta, double *omega_phi, double *eccentricity)
 
+cdef extern from "AAKpy.h":
+    double AAKTDI(SetPar &AAK, double *t, double *Xf_r, double *Xf_im, double *Yf_r, double *Yf_im, double *Zf_r, double *Zf_im)
+
+cdef extern from "AAKpy.h":
+    double AKTDI(SetPar &AK, double *t, double *Xf_r, double *Xf_im, double *Yf_r, double *Yf_im, double *Zf_r, double *Zf_im)
+
 def wave(pars = {}):
     cdef SetPar setpar
 
@@ -125,3 +131,91 @@ def phase(pars = {}):
     cdef double timing = AAKphase(setpar, &t[0], &phase_r[0], &phase_theta[0], &phase_phi[0], &omega_r[0], &omega_theta[0], &omega_phi[0], &eccentricity[0])
 
     return t, phase_r, phase_theta, phase_phi, omega_r, omega_theta, omega_phi, eccentricity, timing
+
+def tdi(pars = {}):
+    cdef SetPar setpar
+
+    setpar.backint = pars['backint']
+    setpar.LISA    = pars['LISA']
+    setpar.traj    = False
+    setpar.SNR     = False
+    setpar.timing  = False
+
+    setpar.length = pars['length']
+
+    setpar.dt = pars['dt']
+    setpar.p = pars['p']
+    setpar.T = pars['T']
+    setpar.f = pars['f']
+    setpar.T_fit = pars['T_fit']
+
+    setpar.mu = pars['mu']
+    setpar.M = pars['M']
+    setpar.s = pars['s']
+    setpar.e = pars['e']
+    setpar.iota = pars['iota']
+    setpar.gamma = pars['gamma']
+    setpar.psi = pars['psi']
+
+    setpar.theta_S = pars['theta_S']
+    setpar.phi_S = pars['phi_S']
+    setpar.theta_K = pars['theta_K']
+    setpar.phi_K = pars['phi_K']
+    setpar.alpha = pars['alpha']
+    setpar.D = pars['D']
+
+    cdef numpy.ndarray[double,ndim=1] f 	= numpy.zeros(int((setpar.length+1)/2), 'd')
+    cdef numpy.ndarray[double,ndim=1] Xf_r	= numpy.zeros(int((setpar.length+1)/2), 'd')
+    cdef numpy.ndarray[double,ndim=1] Xf_im	= numpy.zeros(int((setpar.length+1)/2), 'd')
+    cdef numpy.ndarray[double,ndim=1] Yf_r	= numpy.zeros(int((setpar.length+1)/2), 'd')
+    cdef numpy.ndarray[double,ndim=1] Yf_im	= numpy.zeros(int((setpar.length+1)/2), 'd')
+    cdef numpy.ndarray[double,ndim=1] Zf_r	= numpy.zeros(int((setpar.length+1)/2), 'd')
+    cdef numpy.ndarray[double,ndim=1] Zf_im	= numpy.zeros(int((setpar.length+1)/2), 'd')
+
+    cdef double timing = AAKTDI(setpar, &f[0], &Xf_r[0], &Xf_im[0], &Yf_r[0], &Yf_im[0], &Zf_r[0], &Zf_im[0])
+
+    return f, Xf_r, Xf_im, Yf_r, Yf_im, Zf_r, Zf_im, timing
+
+def aktdi(pars = {}):
+    cdef SetPar setpar
+
+    setpar.backint = pars['backint']
+    setpar.LISA    = pars['LISA']
+    setpar.traj    = False
+    setpar.SNR     = False
+    setpar.timing  = False
+
+    setpar.length = pars['length']
+
+    setpar.dt = pars['dt']
+    setpar.p = pars['p']
+    setpar.T = pars['T']
+    setpar.f = pars['f']
+    setpar.T_fit = pars['T_fit']
+
+    setpar.mu = pars['mu']
+    setpar.M = pars['M']
+    setpar.s = pars['s']
+    setpar.e = pars['e']
+    setpar.iota = pars['iota']
+    setpar.gamma = pars['gamma']
+    setpar.psi = pars['psi']
+
+    setpar.theta_S = pars['theta_S']
+    setpar.phi_S = pars['phi_S']
+    setpar.theta_K = pars['theta_K']
+    setpar.phi_K = pars['phi_K']
+    setpar.alpha = pars['alpha']
+    setpar.D = pars['D']
+
+    cdef numpy.ndarray[double,ndim=1] f 	= numpy.zeros(int((setpar.length+1)/2), 'd')
+    cdef numpy.ndarray[double,ndim=1] Xf_r	= numpy.zeros(int((setpar.length+1)/2), 'd')
+    cdef numpy.ndarray[double,ndim=1] Xf_im	= numpy.zeros(int((setpar.length+1)/2), 'd')
+    cdef numpy.ndarray[double,ndim=1] Yf_r	= numpy.zeros(int((setpar.length+1)/2), 'd')
+    cdef numpy.ndarray[double,ndim=1] Yf_im	= numpy.zeros(int((setpar.length+1)/2), 'd')
+    cdef numpy.ndarray[double,ndim=1] Zf_r	= numpy.zeros(int((setpar.length+1)/2), 'd')
+    cdef numpy.ndarray[double,ndim=1] Zf_im	= numpy.zeros(int((setpar.length+1)/2), 'd')
+
+    cdef double timing = AKTDI(setpar, &f[0], &Xf_r[0], &Xf_im[0], &Yf_r[0], &Yf_im[0], &Zf_r[0], &Zf_im[0])
+
+    return f, Xf_r, Xf_im, Yf_r, Yf_im, Zf_r, Zf_im, timing
