@@ -55,12 +55,12 @@ Running `bin/AAK_Phase examples/SetPar_Phase` will create two files in `./bin`:
 
 ### Python wrapper
 
-Finally, example Python usage is provided in `./examples/AAKdemo.py`. There are four available functions in the module `AAKwrapper`:
+Finally, example Python usage is provided in the file `./examples/AAKdemo.py`. There are four available functions in the module `AAKwrapper`:
 
-- `wave` corresponds to the output of `./AAK_Waveform`
-- `tdi` corresponds to the output of `./AAK_TDI`
-- `phase` corresponds to the output of `./AAK_Phase`
-- `aktdi` corresponds to the output of `./AK_TDI`
+- `wave` corresponds to the output of `./bin/AAK_Waveform`
+- `tdi` corresponds to the output of `./bin/AAK_TDI`
+- `phase` corresponds to the output of `./bin/AAK_Phase`
+- `aktdi` corresponds to the output of `./bin/AK_TDI`
 
 ## List of (important) known bugs
 
