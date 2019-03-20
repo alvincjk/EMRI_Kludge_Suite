@@ -482,8 +482,8 @@ void waveform(double *t, double *hI, double *hII, double timestep, int vlength, 
         J[0]=-gsl_sf_bessel_J1(ne);
         J[1]=gsl_sf_bessel_J0(ne);
         J[2]=gsl_sf_bessel_J1(ne);
-        J[3]=-gsl_sf_bessel_Jn(2,ne);
-        J[4]=-gsl_sf_bessel_Jn(3,ne);
+        J[3]=gsl_sf_bessel_Jn(2,ne);
+        J[4]=gsl_sf_bessel_Jn(3,ne);
       }
       else gsl_sf_bessel_Jn_array(n-2,n+2,ne,J);
       double a=-n*Amp*(J[0]-2.*e*J[1]+2./n*J[2]+2.*e*J[3]-J[4])*cos(nPhi);
