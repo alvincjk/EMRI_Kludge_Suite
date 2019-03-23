@@ -439,8 +439,8 @@ void waveformAKTDI(double *Xf_r, double *Xf_im, double *Yf_r, double *Yf_im, dou
         					J[0]=-gsl_sf_bessel_J1(ne);
         					J[1]=gsl_sf_bessel_J0(ne);
         					J[2]=gsl_sf_bessel_J1(ne);
-        					J[3]=-gsl_sf_bessel_Jn(2,ne);
-        					J[4]=-gsl_sf_bessel_Jn(3,ne);
+        					J[3]=gsl_sf_bessel_Jn(2,ne);
+        					J[4]=gsl_sf_bessel_Jn(3,ne);
       					}
       					else gsl_sf_bessel_Jn_array(nn-2,nn+2,ne,J);
                     	hamp = -nn*((J[0]-2.*ec*J[1]+2./nn*J[2]+2.*ec*J[3]-J[4])+sqrt(1-ec*ec)*(J[0]-2.*J[2]+J[4]));
