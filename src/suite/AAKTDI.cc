@@ -61,7 +61,7 @@ void PNevolutionTDI(complex<double> **Xp, complex<double> **Xc, complex<double> 
    	double dw = (sin(qK)*sin(phiS-phiK));
    	double psi;
    	if (dw != 0.0) {
-   		psi = atan2(up, dw);
+   		psi = -atan2(up, dw);
    	}
    	else {
     	psi = 0.5*M_PI;
