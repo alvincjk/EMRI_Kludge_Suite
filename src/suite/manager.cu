@@ -92,7 +92,6 @@ GPUAAK::GPUAAK (double T_fit_,
 
       NUM_THREADS = 256;
       num_blocks = std::ceil((length + NUM_THREADS -1)/NUM_THREADS);
-      printf("blocks %d\n", num_blocks);
 
 }
 
@@ -112,11 +111,6 @@ void GPUAAK::gpu_gen_AAK(
     double phi_K_,
     double D_){
 
-    cudaEvent_t start, stop;
-    cudaEventCreate(&start);
-    cudaEventCreate(&stop);
-
-    cudaEventRecord(start);
     GPUAAK::run_phase_trajectory(
         iota_,
         s_,
@@ -132,11 +126,8 @@ void GPUAAK::gpu_gen_AAK(
         theta_K_,
         phi_K_,
         D_);
-    cudaEventRecord(stop);
-    cudaEventSynchronize(stop);
+
     float milliseconds = 0;
-    cudaEventElapsedTime(&milliseconds, start, stop);
-    printf("cpu: %e sec\n", milliseconds/1e3);
 
 
     // Initialize inputs
@@ -179,16 +170,11 @@ void GPUAAK::gpu_gen_AAK(
     assert(err == 0);
 
     /* main: evaluate model at given frequencies */
-    cudaEventRecord(start);
     kernel_create_waveform<<<num_blocks, NUM_THREADS>>>(d_t, d_hI, d_hII, d_tvec, d_evec, d_vvec, d_Mvec, d_Svec, d_gimvec, d_Phivec, d_alpvec, d_nuvec, d_gimdotvec, iota, theta_S, phi_S, theta_K, phi_K, LISA, length, nmodes, i_plunge, i_buffer, zeta, M, dt);  //iota = lam
 
      cudaDeviceSynchronize();
      err = cudaGetLastError();
      assert(err == 0);
-     cudaEventRecord(stop);
-     cudaEventSynchronize(stop);
-     cudaEventElapsedTime(&milliseconds, start, stop);
-     printf("kernel: %e sec\n", milliseconds/1e3);
 }
 
 
