@@ -1,4 +1,3 @@
-#include "WaveformContainer.h"
 #include "AAK.h"
 #include "Globals.h"
 #include <stdlib.h>
@@ -62,6 +61,8 @@ class GPUAAK {
   int i_plunge;
   int i_buffer;
 
+  double par[12];
+
 public:
   /* By using the swig default names INPLACE_ARRAY1, DIM1 in the header
      file (these aren't the names in the implementation file), we're giving
@@ -94,8 +95,8 @@ public:
       double alph_,
       double theta_S_,
       double phi_S_,
-      double theta_K,
-      double phi_K,
+      double theta_K_,
+      double phi_K_,
       double D_);
 
   void gpu_gen_AAK(

@@ -3,10 +3,12 @@
 from __future__ import print_function
 
 import sys, os, platform
+from os.path import join as pjoin
 
 from setuptools import setup
 from setuptools import Extension
 import distutils.sysconfig
+from Cython.Distutils import build_ext
 
 from Cython.Build import cythonize
 
@@ -158,10 +160,10 @@ def gpu_setup():
             extra_compile_args= {
                 'gcc': ['-std=c99', "-Wno-unused-function"],  # , "-g"]
                 'nvcc': [
-                    '-arch=sm_30', '--ptxas-options=-v', '-c',
+                    '-arch=sm_70', '--ptxas-options=-v', '-c',
                     '--compiler-options', "'-fPIC'"]  # ,"-G", "-g"] # for debugging
                 },
-                include_dirs = [numpy_include, include_gsl_dir, CUDA['include'], './include', './src']
+                include_dirs = [numpy_include, include_gsl_dir, CUDA['include'], './include', './src', './src/suite']
             )
 
 
@@ -184,7 +186,7 @@ print_strings = []
 try:
     print_strings.append('ATTEMPTED CUDA INSTALL')
     gpu_setup()
-    print_strings.append('INSTALLED FOR CUDA: gpuPhenomHM')
+    print_strings.append('INSTALLED FOR CUDA: gpuAAK')
 except OSError:
     print_strings.append('COULD NOT FIND CUDA ON PATH.'
                          + 'The nvcc binary could not be located in your $PATH. '

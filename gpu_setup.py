@@ -134,7 +134,7 @@ ext = Extension('gpuAAK',
 
 setup(name = 'gpuAAK',
       # Random metadata. there's more you can supply
-      author = 'Robert McGibbon',
+      author = 'Michael Katz',
       version = '0.1',
 
       ext_modules = [ext],

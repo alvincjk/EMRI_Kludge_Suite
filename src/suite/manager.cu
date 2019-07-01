@@ -12,7 +12,6 @@ This class will get translated into python via swig
 #include <assert.h>
 #include <iostream>
 #include <stdlib.h>
-#include "WaveformContainer.h"
 
 #include "Globals.h"
 #include "GKTrajFast.h"
@@ -39,7 +38,6 @@ GPUAAK::GPUAAK (double T_fit_,
     cudaError_t err;
 
     // DECLARE ALL THE  NECESSARY STRUCTS
-    transfer_info = new WaveformContainer;
 
     tvec = new double[length+1];
     evec = new double[length+1];
@@ -114,7 +112,11 @@ void GPUAAK::gpu_gen_AAK(
     double phi_K_,
     double D_){
 
+    cudaEvent_t start, stop;
+    cudaEventCreate(&start);
+    cudaEventCreate(&stop);
 
+    cudaEventRecord(start);
     GPUAAK::run_phase_trajectory(
         iota_,
         s_,
@@ -130,6 +132,11 @@ void GPUAAK::gpu_gen_AAK(
         theta_K_,
         phi_K_,
         D_);
+    cudaEventRecord(stop);
+    cudaEventSynchronize(stop);
+    float milliseconds = 0;
+    cudaEventElapsedTime(&milliseconds, start, stop);
+    printf("cpu: %e sec\n", milliseconds/1e3);
 
 
     // Initialize inputs
@@ -138,7 +145,7 @@ void GPUAAK::gpu_gen_AAK(
     if (par[3]<0.135) nmodes=4;
     // ----------
 
-    zeta=par[0]/dist/Gpc; // M/D
+    zeta=par[0]/D/Gpc; // M/D
 
     cudaError_t err;
     err = cudaMemcpy(d_tvec, tvec, (length+1)*sizeof(double), cudaMemcpyHostToDevice);
@@ -172,12 +179,16 @@ void GPUAAK::gpu_gen_AAK(
     assert(err == 0);
 
     /* main: evaluate model at given frequencies */
-
+    cudaEventRecord(start);
     kernel_create_waveform<<<num_blocks, NUM_THREADS>>>(d_t, d_hI, d_hII, d_tvec, d_evec, d_vvec, d_Mvec, d_Svec, d_gimvec, d_Phivec, d_alpvec, d_nuvec, d_gimdotvec, iota, theta_S, phi_S, theta_K, phi_K, LISA, length, nmodes, i_plunge, i_buffer, zeta, M, dt);  //iota = lam
 
      cudaDeviceSynchronize();
      err = cudaGetLastError();
      assert(err == 0);
+     cudaEventRecord(stop);
+     cudaEventSynchronize(stop);
+     cudaEventElapsedTime(&milliseconds, start, stop);
+     printf("kernel: %e sec\n", milliseconds/1e3);
 }
 
 
@@ -229,7 +240,7 @@ void GPUAAK::run_phase_trajectory(
       IEKG geodesic_t(traj3[i].p,traj3[i].ecc,traj3[i].cosiota,s);
       geodesic_t.Frequencies(Omega_t);
       if(i==1){
-        ParAng(ang,e,iota,gamma,psi,theta_S,phi_S,theta_K,phi_K,alpha,geodesic_t.zedminus);
+        ParAng(ang,e,iota,gamma,psi,theta_S,phi_S,theta_K,phi_K,alph,geodesic_t.zedminus);
         Phi=ang[0]; // initial mean anomaly
       }
       ParMap(map_t,Omega_t,traj3[i].p,M,s,traj3[i].ecc,iota);
@@ -242,31 +253,29 @@ void GPUAAK::run_phase_trajectory(
 
     //GenWave(t,hI,hII,AAK.dt,AAK.length,e_traj,v_map,AAK.M,M_map,AAK.mu,AAK.s,s_map,AAK.D,AAK.iota,AAK.gamma,Phi,AAK.theta_S,AAK.phi_S,AAK.alpha,AAK.theta_K,AAK.phi_K,dt_map,steps,AAK.backint,AAK.LISA,false);
 
-    double par[12];
     par[0]=mu*SOLARMASSINSEC;
     par[1]=M_map[0]*SOLARMASSINSEC;
-    par[2]=S_map[0];
+    par[2]=s_map[0];
     par[3]=e_traj[0];
-    par[4]=inc;
-    par[5]=gim0;
-    par[6]=Phi0;
-    par[7]=qS;
-    par[8]=phiS;
-    par[9]=qK;
-    par[10]=phiK;
+    par[4]=iota;  // TODO: check this
+    par[5]=gamma;
+    par[6]=Phi;
+    par[7]=theta_S;
+    par[8]=phi_S;
+    par[9]=theta_K;
+    par[10]=phi_K;
     par[11]=alph;
 
 
-    PNevolution(tvec,evec,vvec,Mvec,Svec,gimvec,Phivec,alpvec,nuvec,gimdotvec,timestep,vlength,par,e_traj,v_map,M,M_map,s,S_map,dt_map,steps,&i_plunge,&i_buffer,backint);
+    PNevolution(tvec,evec,vvec,Mvec,Svec,gimvec,Phivec,alpvec,nuvec,gimdotvec,dt,length,par,e_traj,v_map,M,M_map,s,s_map,dt_map,steps,&i_plunge,&i_buffer,backint);
 
 }
 
 void GPUAAK::GetWaveform (double *t_, double* hI_, double* hII_) {
-assert ((to_gpu == 0) || (to_gpu == 2));
- memcpy(t_, t, length*sizeof(double));
- memcpy(hI_, hI, length*sizeof(double));
- memcpy(hII_, hII, length*sizeof(double));
-}
+ cudaMemcpy(t_, d_t, length*sizeof(double), cudaMemcpyDeviceToHost);
+ cudaMemcpy(hI_, d_hI, length*sizeof(double), cudaMemcpyDeviceToHost);
+ cudaMemcpy(hII_, d_hII, length*sizeof(double), cudaMemcpyDeviceToHost);
+}//*/
 
 GPUAAK::~GPUAAK() {
   delete[] evec;
@@ -278,7 +287,6 @@ GPUAAK::~GPUAAK() {
   delete[] alpvec;
   delete[] nuvec;
   delete[] gimdotvec;
-  delete[] transfer_info;
 
   cudaFree(d_t);
   cudaFree(d_hI);
