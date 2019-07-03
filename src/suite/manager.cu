@@ -12,6 +12,10 @@ This class will get translated into python via swig
 #include <assert.h>
 #include <iostream>
 #include <stdlib.h>
+#include "cuComplex.h"
+#include "cublas_v2.h"
+#include <cufft.h>
+#include <complex.h>
 
 #include "Globals.h"
 #include "GKTrajFast.h"
@@ -21,19 +25,41 @@ This class will get translated into python via swig
 
 using namespace std;
 
+#define BATCH 1
+
+#define gpuErrchk(ans) { gpuAssert((ans), __FILE__, __LINE__); }
+inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=true)
+{
+   if (code != cudaSuccess)
+   {
+      fprintf(stderr,"GPUassert: %s %s %d\n", cudaGetErrorString(code), file, line);
+      if (abort) exit(code);
+   }
+}
+
 GPUAAK::GPUAAK (double T_fit_,
     int length_,
     double dt_,
     bool LISA_,
-    bool backint_){
+    bool backint_,
+    cmplx *data_channel1_,
+    cmplx *data_channel2_,
+    double *noise_channel1_inv_,
+    double *noise_channel2_inv_){
 
     T_fit = T_fit_;
     length = length_;
     dt = dt_;
     LISA = LISA_;
     backint = backint_;
+    data_channel1 = data_channel1_;
+    data_channel2 = data_channel2_;
+    noise_channel1_inv = noise_channel1_inv_;
+    noise_channel2_inv = noise_channel2_inv_;
 
     to_gpu = 1;
+
+     fft_length = ((int) (length/2)) + 1;
 
     cudaError_t err;
 
@@ -50,48 +76,63 @@ GPUAAK::GPUAAK (double T_fit_,
     nuvec = new double[length+1];
     gimdotvec = new double[length+1];
 
-      double_size = length*sizeof(double);
-      err = cudaMalloc(&d_t, length*sizeof(double));
-      assert(err == 0);
 
-      err = cudaMalloc(&d_hI, length*sizeof(double));
-      assert(err == 0);
-      err = cudaMalloc(&d_hII, length*sizeof(double));
-      assert(err == 0);
+      double_size = length*sizeof(double);
+      gpuErrchk(cudaMalloc(&d_t, (length+2)*sizeof(double)));
+
+      gpuErrchk(cudaMalloc(&d_hI, (length+2)*sizeof(double)));
+      gpuErrchk(cudaMalloc(&d_hII, (length+2)*sizeof(double)));
+
+      gpuErrchk(cudaMalloc(&d_data_channel1, fft_length*sizeof(cuDoubleComplex)));
+      gpuErrchk(cudaMalloc(&d_data_channel2, fft_length*sizeof(cuDoubleComplex)));
+
+      gpuErrchk(cudaMemcpy(d_data_channel1, data_channel1, fft_length*sizeof(cuDoubleComplex), cudaMemcpyHostToDevice));
+      gpuErrchk(cudaMemcpy(d_data_channel2, data_channel2, fft_length*sizeof(cuDoubleComplex), cudaMemcpyHostToDevice));
+
+      gpuErrchk(cudaMalloc(&d_noise_channel1_inv, fft_length*sizeof(double)));
+      gpuErrchk(cudaMalloc(&d_noise_channel2_inv, fft_length*sizeof(double)));
+
+      gpuErrchk(cudaMemcpy(d_noise_channel1_inv, noise_channel1_inv, fft_length*sizeof(double), cudaMemcpyHostToDevice));
+      gpuErrchk(cudaMemcpy(d_noise_channel2_inv, noise_channel2_inv, fft_length*sizeof(double), cudaMemcpyHostToDevice));
 
       double_plus_one_size = (length+1)*sizeof(double);  // TODO reduce size properly
-      err = cudaMalloc(&d_tvec, (length+1)*sizeof(double));
-      assert(err == 0);
+      gpuErrchk(cudaMalloc(&d_tvec, (length+1)*sizeof(double)));
 
-      err = cudaMalloc(&d_evec, (length+1)*sizeof(double));
-      assert(err == 0);
+      gpuErrchk(cudaMalloc(&d_evec, (length+1)*sizeof(double)));
 
-      err = cudaMalloc(&d_vvec, (length+1)*sizeof(double));
-      assert(err == 0);
+      gpuErrchk(cudaMalloc(&d_vvec, (length+1)*sizeof(double)));
 
-      err = cudaMalloc(&d_Mvec, (length+1)*sizeof(double));
-      assert(err == 0);
+      gpuErrchk(cudaMalloc(&d_Mvec, (length+1)*sizeof(double)));
 
-      err = cudaMalloc(&d_Svec, (length+1)*sizeof(double));
-      assert(err == 0);
+      gpuErrchk(cudaMalloc(&d_Svec, (length+1)*sizeof(double)));
 
-      err = cudaMalloc(&d_gimvec, (length+1)*sizeof(double));
-      assert(err == 0);
+      gpuErrchk(cudaMalloc(&d_gimvec, (length+1)*sizeof(double)));
 
-      err = cudaMalloc(&d_Phivec, (length+1)*sizeof(double));
-      assert(err == 0);
+      gpuErrchk(cudaMalloc(&d_Phivec, (length+1)*sizeof(double)));
 
-      err = cudaMalloc(&d_alpvec, (length+1)*sizeof(double));
-      assert(err == 0);
+      gpuErrchk(cudaMalloc(&d_alpvec, (length+1)*sizeof(double)));
 
-      err = cudaMalloc(&d_nuvec, (length+1)*sizeof(double));
-      assert(err == 0);
+      gpuErrchk(cudaMalloc(&d_nuvec, (length+1)*sizeof(double)));
 
-      err = cudaMalloc(&d_gimdotvec, (length+1)*sizeof(double));
-      assert(err == 0);
+      gpuErrchk(cudaMalloc(&d_gimdotvec, (length+1)*sizeof(double)));
+
 
       NUM_THREADS = 256;
       num_blocks = std::ceil((length + NUM_THREADS -1)/NUM_THREADS);
+
+     // cufftHandle plan_;
+      //plan = plan_;
+
+      //cufftComplex *data;
+      if (cufftPlan1d(&plan, length, CUFFT_D2Z, BATCH) != CUFFT_SUCCESS){
+        	fprintf(stderr, "CUFFT error: Plan creation failed");
+        	return;	}
+
+    stat = cublasCreate(&handle);
+  if (stat != CUBLAS_STATUS_SUCCESS) {
+          printf ("CUBLAS initialization failed\n");
+          exit(0);
+      }
 
 }
 
@@ -139,42 +180,40 @@ void GPUAAK::gpu_gen_AAK(
     zeta=par[0]/D/Gpc; // M/D
 
     cudaError_t err;
-    err = cudaMemcpy(d_tvec, tvec, (length+1)*sizeof(double), cudaMemcpyHostToDevice);
-    assert(err == 0);
+    gpuErrchk(cudaMemcpy(d_tvec, tvec, (length+1)*sizeof(double), cudaMemcpyHostToDevice));
 
-    err = cudaMemcpy(d_evec, evec, (length+1)*sizeof(double), cudaMemcpyHostToDevice);
-    assert(err == 0);
+    gpuErrchk(cudaMemcpy(d_evec, evec, (length+1)*sizeof(double), cudaMemcpyHostToDevice));
 
-    err = cudaMemcpy(d_vvec, vvec, (length+1)*sizeof(double), cudaMemcpyHostToDevice);
-    assert(err == 0);
+    gpuErrchk(cudaMemcpy(d_vvec, vvec, (length+1)*sizeof(double), cudaMemcpyHostToDevice));
 
-    err = cudaMemcpy(d_Mvec, Mvec, (length+1)*sizeof(double), cudaMemcpyHostToDevice);
-    assert(err == 0);
+    gpuErrchk(cudaMemcpy(d_Mvec, Mvec, (length+1)*sizeof(double), cudaMemcpyHostToDevice));
 
-    err = cudaMemcpy(d_Svec, Svec, (length+1)*sizeof(double), cudaMemcpyHostToDevice);
-    assert(err == 0);
+    gpuErrchk(cudaMemcpy(d_Svec, Svec, (length+1)*sizeof(double), cudaMemcpyHostToDevice));
 
-    err = cudaMemcpy(d_gimvec, gimvec, (length+1)*sizeof(double), cudaMemcpyHostToDevice);
-    assert(err == 0);
+    gpuErrchk(cudaMemcpy(d_gimvec, gimvec, (length+1)*sizeof(double), cudaMemcpyHostToDevice));
 
-    err = cudaMemcpy(d_Phivec, Phivec, (length+1)*sizeof(double), cudaMemcpyHostToDevice);
-    assert(err == 0);
+    gpuErrchk(cudaMemcpy(d_Phivec, Phivec, (length+1)*sizeof(double), cudaMemcpyHostToDevice));
 
-    err = cudaMemcpy(d_alpvec, alpvec, (length+1)*sizeof(double), cudaMemcpyHostToDevice);
-    assert(err == 0);
+    gpuErrchk(cudaMemcpy(d_alpvec, alpvec, (length+1)*sizeof(double), cudaMemcpyHostToDevice));
 
-    err = cudaMemcpy(d_nuvec, nuvec, (length+1)*sizeof(double), cudaMemcpyHostToDevice);
-    assert(err == 0);
+    gpuErrchk(cudaMemcpy(d_nuvec, nuvec, (length+1)*sizeof(double), cudaMemcpyHostToDevice));
 
-    err = cudaMemcpy(d_gimdotvec, gimdotvec, (length+1)*sizeof(double), cudaMemcpyHostToDevice);
-    assert(err == 0);
+    gpuErrchk(cudaMemcpy(d_gimdotvec, gimdotvec, (length+1)*sizeof(double), cudaMemcpyHostToDevice));
 
     /* main: evaluate model at given frequencies */
     kernel_create_waveform<<<num_blocks, NUM_THREADS>>>(d_t, d_hI, d_hII, d_tvec, d_evec, d_vvec, d_Mvec, d_Svec, d_gimvec, d_Phivec, d_alpvec, d_nuvec, d_gimdotvec, iota, theta_S, phi_S, theta_K, phi_K, LISA, length, nmodes, i_plunge, i_buffer, zeta, M, dt);  //iota = lam
 
      cudaDeviceSynchronize();
-     err = cudaGetLastError();
-     assert(err == 0);
+     gpuErrchk(cudaGetLastError());
+
+
+         /*double *hI = new double[length+2];
+     cudaMemcpy(hI, d_data_channel1, (length+2)*sizeof(double), cudaMemcpyDeviceToHost);
+     for (int i=0; i<200; i+=1){
+         //if (i == fft_length-1) hI[2*i + 1] = 0.0;
+         printf("%d after: , %e + %e j, %e + %e j\n", i, hI[2*i], hI[2*i + 1], data_channel1[i].real(), data_channel1[i].imag());
+     }
+     delete[] hI;//*/
 }
 
 
@@ -257,13 +296,102 @@ void GPUAAK::run_phase_trajectory(
 
 }
 
+void GPUAAK::Likelihood (double *like_out_){
+
+    //cudaMemcpy(hI, d_hI, (length+2)*sizeof(double), cudaMemcpyDeviceToHost);
+
+    if (cufftExecD2Z(plan, d_hI, (cufftDoubleComplex*)d_hI) != CUFFT_SUCCESS){
+    fprintf(stderr, "CUFFT error: ExecC2C Forward failed");
+    return;}
+    cudaDeviceSynchronize();
+    gpuErrchk(cudaGetLastError());
+
+    if (cufftExecD2Z(plan, d_hII, (cufftDoubleComplex*)d_hII) != CUFFT_SUCCESS){
+    fprintf(stderr, "CUFFT error: ExecC2C Forward failed");
+    return;}
+
+    cudaDeviceSynchronize();
+    gpuErrchk(cudaGetLastError());
+
+    likelihood_prep<<<num_blocks, NUM_THREADS>>>((cuDoubleComplex*)d_hI, (cuDoubleComplex*)d_hII, d_noise_channel1_inv, d_noise_channel2_inv, fft_length);
+    cudaDeviceSynchronize();
+    gpuErrchk(cudaGetLastError());
+
+
+    //printf("checkcheckcheck\n");
+
+     double d_h = 0.0;
+     double h_h = 0.0;
+     char * status;
+     double res;
+     cuDoubleComplex result;
+
+         stat = cublasZdotc(handle, fft_length,
+                 (cuDoubleComplex*)d_hI, 1,
+                 (cuDoubleComplex*)d_data_channel1, 1,
+                 &result);
+         status = _cudaGetErrorEnum(stat);
+          cudaDeviceSynchronize();
+
+          if (stat != CUBLAS_STATUS_SUCCESS) {
+                  exit(0);
+              }
+         d_h += cuCreal(result);
+         //printf("channel1 d_h: %e\n", cuCreal(result));
+
+         stat = cublasZdotc(handle, fft_length,
+                 (cuDoubleComplex*)d_hII, 1,
+                 (cuDoubleComplex*)d_data_channel2, 1,
+                 &result);
+         status = _cudaGetErrorEnum(stat);
+          cudaDeviceSynchronize();
+
+          if (stat != CUBLAS_STATUS_SUCCESS) {
+                  exit(0);
+              }
+         d_h += cuCreal(result);
+         //printf("channel2 d_h: %e\n", cuCreal(result));
+
+        stat = cublasZdotc(handle, fft_length,
+                     (cuDoubleComplex*)d_hI, 1,
+                     (cuDoubleComplex*)d_hI, 1,
+                     &result);
+             status = _cudaGetErrorEnum(stat);
+              cudaDeviceSynchronize();
+
+              if (stat != CUBLAS_STATUS_SUCCESS) {
+                      exit(0);
+                  }
+             h_h += cuCreal(result);
+             //printf("channel1 h_h: %e\n", cuCreal(result));
+
+             stat = cublasZdotc(handle, fft_length,
+                     (cuDoubleComplex*)d_hII, 1,
+                     (cuDoubleComplex*)d_hII, 1,
+                     &result);
+             status = _cudaGetErrorEnum(stat);
+              cudaDeviceSynchronize();
+
+              if (stat != CUBLAS_STATUS_SUCCESS) {
+                      exit(0);
+                  }
+             h_h += cuCreal(result);
+             //printf("channel2 h_h: %e\n", cuCreal(result));
+
+    //printf("dh: %e, hh: %e\n", d_h, h_h);
+     like_out_[0] = 4*d_h;
+     like_out_[1] = 4*h_h;
+
+}
+
 void GPUAAK::GetWaveform (double *t_, double* hI_, double* hII_) {
- cudaMemcpy(t_, d_t, length*sizeof(double), cudaMemcpyDeviceToHost);
- cudaMemcpy(hI_, d_hI, length*sizeof(double), cudaMemcpyDeviceToHost);
- cudaMemcpy(hII_, d_hII, length*sizeof(double), cudaMemcpyDeviceToHost);
+ gpuErrchk(cudaMemcpy(t_, d_t, (length+2)*sizeof(double), cudaMemcpyDeviceToHost));
+ gpuErrchk(cudaMemcpy(hI_, d_hI, (length+2)*sizeof(double), cudaMemcpyDeviceToHost));
+ gpuErrchk(cudaMemcpy(hII_, d_hII, (length+2)*sizeof(double), cudaMemcpyDeviceToHost));
 }//*/
 
 GPUAAK::~GPUAAK() {
+  delete[] tvec;
   delete[] evec;
   delete[] vvec;
   delete[] Mvec;
@@ -277,6 +405,7 @@ GPUAAK::~GPUAAK() {
   cudaFree(d_t);
   cudaFree(d_hI);
   cudaFree(d_hII);
+  cudaFree(d_tvec);
   cudaFree(d_evec);
   cudaFree(d_vvec);
   cudaFree(d_Mvec);
@@ -286,5 +415,11 @@ GPUAAK::~GPUAAK() {
   cudaFree(d_alpvec);
   cudaFree(d_nuvec);
   cudaFree(d_gimdotvec);
+  cudaFree(d_data_channel1);
+  cudaFree(d_data_channel2);
+  cudaFree(d_noise_channel1_inv);
+  cudaFree(d_noise_channel2_inv);
+
+  cufftDestroy(plan);
 
 }

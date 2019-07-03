@@ -116,6 +116,9 @@ void d_RotCoeff(double rot[],double iota,double theta_S,double phi_S,double thet
 __global__
 void kernel_create_waveform(double *t, double *hI, double *hII, double *tvec, double *evec, double *vvec, double *Mvec, double *Svec, double *gimvec, double *Phivec, double *alpvec, double *nuvec, double *gimdotvec, double lam, double qS, double phiS, double qK, double phiK, bool mich, int vlength,int nmodes, int i_plunge, int i_buffer, double zeta, double M_phys, double timestep){
 
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i >= vlength) return;
+
   // ----------  // TODO: calculate this first section before gpu
   double coslam=cos(lam);
   double sinlam=sin(lam);
@@ -127,7 +130,6 @@ void kernel_create_waveform(double *t, double *hI, double *hII, double *tvec, do
   double sinphiK=sin(phiK);
   double halfsqrt3=sqrt(3.)/2.;
   // ----- compute waveform from t_start to t_end -----
-  int i = blockIdx.x * blockDim.x + threadIdx.x;
   //for(int i=0;i<vlength;i++){
   if (i<=i_plunge+i_buffer){
     t[i]=tvec[i];
@@ -246,10 +248,9 @@ void kernel_create_waveform(double *t, double *hI, double *hII, double *tvec, do
 
     }
   }
-  double t_plunge=t[i_plunge];
+  double t_plunge=tvec[i_plunge];
   double t_zero=t_plunge+timestep*i_buffer;
   if ((i>i_plunge) &&(i<vlength)){
-      //t[i]=tvec[i];
     if(i<i_plunge+i_buffer){
       hI[i]=hI[i]/(exp((t_plunge-t_zero)/(t[i]-t_plunge)+(t_plunge-t_zero)/(t[i]-t_zero))+1.);
       hII[i]=hII[i]/(exp((t_plunge-t_zero)/(t[i]-t_plunge)+(t_plunge-t_zero)/(t[i]-t_zero))+1.);
@@ -262,4 +263,13 @@ void kernel_create_waveform(double *t, double *hI, double *hII, double *tvec, do
 
 }
 
+}
+
+
+__global__
+void likelihood_prep(cuDoubleComplex *template_channel1, cuDoubleComplex *template_channel2, double *noise_channel1_inv, double *noise_channel2_inv, int length){
+    int i = blockIdx.x*blockDim.x + threadIdx.x;
+    if (i >= length) return;
+    template_channel1[i] = cuCmul(template_channel1[i], make_cuDoubleComplex(noise_channel1_inv[i], 0.0));
+    template_channel2[i] = cuCmul(template_channel2[i], make_cuDoubleComplex(noise_channel2_inv[i], 0.0));
 }

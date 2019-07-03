@@ -1,6 +1,15 @@
+#ifndef __MANAGER_H__
+#define __MANAGER_H__
+
 #include "AAK.h"
 #include "Globals.h"
 #include <stdlib.h>
+#include "cuComplex.h"
+#include "cublas_v2.h"
+#include <cufft.h>
+
+typedef complex<double> cmplx;
+
 
 class GPUAAK {
   // pointer to the GPU memory where the array is stored
@@ -15,6 +24,14 @@ class GPUAAK {
   double *d_t;
   double *d_hI;
   double *d_hII;
+  cmplx *data_channel1;
+  cmplx *data_channel2;
+  double *noise_channel1_inv;
+  double *noise_channel2_inv;
+  cuDoubleComplex *d_data_channel1;
+  cuDoubleComplex *d_data_channel2;
+  double *d_noise_channel1_inv;
+  double *d_noise_channel2_inv;
   size_t double_plus_one_size;
 
   double *tvec;
@@ -63,6 +80,12 @@ class GPUAAK {
 
   double par[12];
 
+  cufftHandle plan;
+  int fft_length;
+
+  cublasHandle_t handle;
+  cublasStatus_t stat;
+
 public:
   /* By using the swig default names INPLACE_ARRAY1, DIM1 in the header
      file (these aren't the names in the implementation file), we're giving
@@ -75,11 +98,15 @@ public:
        %apply (int* ARGOUT_ARRAY1, int DIM1) {(int* myarray, int length)}
    */
 
-  GPUAAK(double T_fit_,
-      int length_,
-      double dt_,
-      bool LISA_,
-      bool backint_); // constructor (copies to GPU)
+   GPUAAK (double T_fit_,
+       int length_,
+       double dt_,
+       bool LISA_,
+       bool backint_,
+       cmplx *data_channel1_,
+       cmplx *data_channel2_,
+       double *noise_channel1_inv_,
+       double *noise_channel2_inv_); // constructor (copies to GPU)
 
   ~GPUAAK(); // destructor
 
@@ -115,8 +142,43 @@ public:
         double phi_K,
         double D_);
 
+    void Likelihood(double *like_out_);
 
   //gets results back from the gpu, putting them in the supplied memory location
   void GetWaveform (double *t_, double* hI_, double* hII_);
 
 };
+
+static char *_cudaGetErrorEnum(cublasStatus_t error)
+{
+    switch (error)
+    {
+        case CUBLAS_STATUS_SUCCESS:
+            return "CUBLAS_STATUS_SUCCESS";
+
+        case CUBLAS_STATUS_NOT_INITIALIZED:
+            return "CUBLAS_STATUS_NOT_INITIALIZED";
+
+        case CUBLAS_STATUS_ALLOC_FAILED:
+            return "CUBLAS_STATUS_ALLOC_FAILED";
+
+        case CUBLAS_STATUS_INVALID_VALUE:
+            return "CUBLAS_STATUS_INVALID_VALUE";
+
+        case CUBLAS_STATUS_ARCH_MISMATCH:
+            return "CUBLAS_STATUS_ARCH_MISMATCH";
+
+        case CUBLAS_STATUS_MAPPING_ERROR:
+            return "CUBLAS_STATUS_MAPPING_ERROR";
+
+        case CUBLAS_STATUS_EXECUTION_FAILED:
+            return "CUBLAS_STATUS_EXECUTION_FAILED";
+
+        case CUBLAS_STATUS_INTERNAL_ERROR:
+            return "CUBLAS_STATUS_INTERNAL_ERROR";
+    }
+
+    return "<unknown>";
+}
+
+#endif //__MANAGER_H__
