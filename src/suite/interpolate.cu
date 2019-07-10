@@ -33,9 +33,9 @@ InterpArrayContainer * createInterpArrayContainer(size_t *numBytes, int num_arr,
     for (int i=0; i<num_arr; i++){
 
         gpuErrchk_here(cudaMalloc( (void**)&(cpu_array_container[i].array), num_points*sizeof(double) ));
-        gpuErrchk_here(cudaMalloc( (void**)&(cpu_array_container[i].coeff_1), num_points*sizeof(double) ));
-        gpuErrchk_here(cudaMalloc( (void**)&(cpu_array_container[i].coeff_2), num_points*sizeof(double) ));
-        gpuErrchk_here(cudaMalloc( (void**)&(cpu_array_container[i].coeff_3), num_points*sizeof(double) ));
+        gpuErrchk_here(cudaMalloc( (void**)&(cpu_array_container[i].coeff_1), (num_points-1)*sizeof(double) ));
+        gpuErrchk_here(cudaMalloc( (void**)&(cpu_array_container[i].coeff_2), (num_points-1)*sizeof(double) ));
+        gpuErrchk_here(cudaMalloc( (void**)&(cpu_array_container[i].coeff_3), (num_points-1)*sizeof(double) ));
     }
     return cpu_array_container;
 

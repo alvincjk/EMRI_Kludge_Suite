@@ -114,7 +114,7 @@ void d_RotCoeff(double rot[],double iota,double theta_S,double phi_S,double thet
 }
 
 __global__
-void kernel_create_waveform(double *t, double *hI, double *hII, double *tvec, double *evec, double *vvec, double *Mvec, double *Svec, double *gimvec, double *Phivec, double *alpvec, double *nuvec, double *gimdotvec, double lam, double qS, double phiS, double qK, double phiK, bool mich, int vlength,int nmodes, int i_plunge, int i_buffer, double zeta, double M_phys, double timestep){
+void kernel_create_waveform(double *t, double *hI, double *hII, double *tvec, InterpArrayContainer evec, InterpArrayContainer vvec, InterpArrayContainer Mvec, InterpArrayContainer Svec, InterpArrayContainer gimvec, InterpArrayContainer Phivec, InterpArrayContainer alpvec, InterpArrayContainer nuvec, InterpArrayContainer gimdotvec, double lam, double qS, double phiS, double qK, double phiK, bool mich, int vlength,int nmodes, int i_plunge, int i_buffer, double zeta, double M_phys, double timestep){
 
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i >= vlength) return;
@@ -132,19 +132,19 @@ void kernel_create_waveform(double *t, double *hI, double *hII, double *tvec, do
   // ----- compute waveform from t_start to t_end -----
   //for(int i=0;i<vlength;i++){
   if (i<=i_plunge+i_buffer){
-    t[i]=tvec[i];
+    t[i]=timestep*i;
     hI[i]=0.;
     hII[i]=0.;
 
-    double e=evec[i];
-    double v=vvec[i];
-    double M=Mvec[i];
-    double S=Svec[i];
-    double gim=gimvec[i];
-    double Phi=Phivec[i];
-    double alp=alpvec[i];
-    double nu=nuvec[i];
-    double gimdot=gimdotvec[i];
+    double e=evec.array[i];
+    double v=vvec.array[i];
+    double M=Mvec.array[i];
+    double S=Svec.array[i];
+    double gim=gimvec.array[i];
+    double Phi=Phivec.array[i];
+    double alp=alpvec.array[i];
+    double nu=nuvec.array[i];
+    double gimdot=gimdotvec.array[i];
 
     double cosalp=cos(alp);
     double sinalp=sin(alp);

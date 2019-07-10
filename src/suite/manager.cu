@@ -85,15 +85,15 @@ GPUAAK::GPUAAK (double T_fit_,
         numBytes = numBytes_;
         d_trajectories = createInterpArrayContainer_gpu(numBytes);
 
-        d_evec = trajectories[0].array;
-        d_vvec = trajectories[1].array;
-        d_Mvec = trajectories[2].array;
-        d_Svec = trajectories[3].array;
-        d_gimvec = trajectories[4].array;
-        d_Phivec = trajectories[5].array;
-        d_alpvec = trajectories[6].array;
-        d_nuvec = trajectories[7].array;
-        d_gimdotvec = trajectories[8].array;
+        d_evec = trajectories[0];
+        d_vvec = trajectories[1];
+        d_Mvec = trajectories[2];
+        d_Svec = trajectories[3];
+        d_gimvec = trajectories[4];
+        d_Phivec = trajectories[5];
+        d_alpvec = trajectories[6];
+        d_nuvec = trajectories[7];
+        d_gimdotvec = trajectories[8];
 
       double_size = length*sizeof(double);
       gpuErrchk(cudaMalloc(&d_t, (length+2)*sizeof(double)));
@@ -133,6 +133,8 @@ GPUAAK::GPUAAK (double T_fit_,
           printf ("CUBLAS initialization failed\n");
           exit(0);
       }
+
+    interp.alloc_arrays(length + 1, 9);
 
 }
 
@@ -183,22 +185,26 @@ void GPUAAK::gpu_gen_AAK(
     gpuErrchk(cudaMemcpy(d_tvec, tvec, (length+1)*sizeof(double), cudaMemcpyHostToDevice));
 
     printf("check\n");
-    gpuErrchk(cudaMemcpy(d_evec, evec, (length+1)*sizeof(double), cudaMemcpyHostToDevice));
-    gpuErrchk(cudaMemcpy(d_vvec, vvec, (length+1)*sizeof(double), cudaMemcpyHostToDevice));
+    gpuErrchk(cudaMemcpy(d_evec.array, evec, (length+1)*sizeof(double), cudaMemcpyHostToDevice));
+    gpuErrchk(cudaMemcpy(d_vvec.array, vvec, (length+1)*sizeof(double), cudaMemcpyHostToDevice));
 
-    gpuErrchk(cudaMemcpy(d_Mvec, Mvec, (length+1)*sizeof(double), cudaMemcpyHostToDevice));
+    gpuErrchk(cudaMemcpy(d_Mvec.array, Mvec, (length+1)*sizeof(double), cudaMemcpyHostToDevice));
 
-    gpuErrchk(cudaMemcpy(d_Svec, Svec, (length+1)*sizeof(double), cudaMemcpyHostToDevice));
+    gpuErrchk(cudaMemcpy(d_Svec.array, Svec, (length+1)*sizeof(double), cudaMemcpyHostToDevice));
 
-    gpuErrchk(cudaMemcpy(d_gimvec, gimvec, (length+1)*sizeof(double), cudaMemcpyHostToDevice));
+    gpuErrchk(cudaMemcpy(d_gimvec.array, gimvec, (length+1)*sizeof(double), cudaMemcpyHostToDevice));
 
-    gpuErrchk(cudaMemcpy(d_Phivec, Phivec, (length+1)*sizeof(double), cudaMemcpyHostToDevice));
+    gpuErrchk(cudaMemcpy(d_Phivec.array, Phivec, (length+1)*sizeof(double), cudaMemcpyHostToDevice));
 
-    gpuErrchk(cudaMemcpy(d_alpvec, alpvec, (length+1)*sizeof(double), cudaMemcpyHostToDevice));
+    gpuErrchk(cudaMemcpy(d_alpvec.array, alpvec, (length+1)*sizeof(double), cudaMemcpyHostToDevice));
 
-    gpuErrchk(cudaMemcpy(d_nuvec, nuvec, (length+1)*sizeof(double), cudaMemcpyHostToDevice));
+    gpuErrchk(cudaMemcpy(d_nuvec.array, nuvec, (length+1)*sizeof(double), cudaMemcpyHostToDevice));
 
-    gpuErrchk(cudaMemcpy(d_gimdotvec, gimdotvec, (length+1)*sizeof(double), cudaMemcpyHostToDevice));
+    gpuErrchk(cudaMemcpy(d_gimdotvec.array, gimdotvec, (length+1)*sizeof(double), cudaMemcpyHostToDevice));
+
+    gpuErrchk(cudaMemcpy(d_trajectories, trajectories, numBytes, cudaMemcpyHostToDevice));
+
+    interp.setup(d_trajectories, (length + 1), 9);
 
     /* main: evaluate model at given frequencies */
     kernel_create_waveform<<<num_blocks, NUM_THREADS>>>(d_t, d_hI, d_hII, d_tvec, d_evec, d_vvec, d_Mvec, d_Svec, d_gimvec, d_Phivec, d_alpvec, d_nuvec, d_gimdotvec, iota, theta_S, phi_S, theta_K, phi_K, LISA, length, nmodes, i_plunge, i_buffer, zeta, M, dt);  //iota = lam
@@ -406,15 +412,7 @@ GPUAAK::~GPUAAK() {
   cudaFree(d_hI);
   cudaFree(d_hII);
   cudaFree(d_tvec);
-  //destroyInterpArrayContainer(d_trajectories, trajectories, 9);
-  for (int i=0; i<9; i++){
-      gpuErrchk_here(cudaFree(trajectories[i].array));
-      gpuErrchk_here(cudaFree(trajectories[i].coeff_1));
-      gpuErrchk_here(cudaFree(trajectories[i].coeff_2));
-      gpuErrchk_here(cudaFree(trajectories[i].coeff_3));
-  }
-  gpuErrchk_here(cudaFree(d_trajectories));
-  free(trajectories);
+  destroyInterpArrayContainer(d_trajectories, trajectories, 9);
   cudaFree(d_data_channel1);
   cudaFree(d_data_channel2);
   cudaFree(d_noise_channel1_inv);

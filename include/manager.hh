@@ -50,15 +50,17 @@ class GPUAAK {
   InterpArrayContainer *d_trajectories;
   InterpArrayContainer *trajectories;
   size_t numBytes;
-  double * d_evec;
-  double * d_vvec;
-  double * d_Mvec;
-  double * d_Svec;
-  double * d_gimvec;
-  double * d_Phivec;
-  double * d_alpvec;
-  double * d_nuvec;
-  double * d_gimdotvec;
+  InterpArrayContainer d_evec;
+  InterpArrayContainer d_vvec;
+  InterpArrayContainer d_Mvec;
+  InterpArrayContainer d_Svec;
+  InterpArrayContainer d_gimvec;
+  InterpArrayContainer d_Phivec;
+  InterpArrayContainer d_alpvec;
+  InterpArrayContainer d_nuvec;
+  InterpArrayContainer d_gimdotvec;
+
+  Interpolate interp;
 
   double iota;
   double s;

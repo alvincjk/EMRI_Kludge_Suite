@@ -150,7 +150,7 @@ def gpu_setup():
     ext = Extension('gpuAAK',
             sources = ['src/suite/AAK.cc', 'src/suite/manager.cu', 'AAKwrapper/GPUAAK.pyx'],
             library_dirs = [lib_gsl_dir, CUDA['lib64'], '/usr/local/lib', './lib'],
-            libraries = ['cudart', "cublas", "cufft", "gsl", "gslcblas", 'KS', 'IEKG', 'LB', 'NR', 'RRGW', 'GKG', 'Circ'],
+            libraries = ['cudart', "cublas", "cusparse", "cufft", "gsl", "gslcblas", 'KS', 'IEKG', 'LB', 'NR', 'RRGW', 'GKG', 'Circ'],
             language = 'c++',
             runtime_library_dirs = [CUDA['lib64']],
             # This syntax is specific to this build system
