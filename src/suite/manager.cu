@@ -22,6 +22,7 @@ This class will get translated into python via swig
 #include "KSParMap.h"
 #include "KSTools.h"
 #include "AAK.h"
+#include "interpolate.cu"
 
 using namespace std;
 
@@ -36,6 +37,7 @@ inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=t
       if (abort) exit(code);
    }
 }
+
 
 GPUAAK::GPUAAK (double T_fit_,
     int length_,
@@ -77,6 +79,22 @@ GPUAAK::GPUAAK (double T_fit_,
     gimdotvec = new double[length+1];
 
 
+
+        size_t numBytes_ = 0;
+        trajectories = createInterpArrayContainer(&numBytes_, 9, length+1);
+        numBytes = numBytes_;
+        d_trajectories = createInterpArrayContainer_gpu(numBytes);
+
+        d_evec = trajectories[0].array;
+        d_vvec = trajectories[1].array;
+        d_Mvec = trajectories[2].array;
+        d_Svec = trajectories[3].array;
+        d_gimvec = trajectories[4].array;
+        d_Phivec = trajectories[5].array;
+        d_alpvec = trajectories[6].array;
+        d_nuvec = trajectories[7].array;
+        d_gimdotvec = trajectories[8].array;
+
       double_size = length*sizeof(double);
       gpuErrchk(cudaMalloc(&d_t, (length+2)*sizeof(double)));
 
@@ -97,24 +115,6 @@ GPUAAK::GPUAAK (double T_fit_,
 
       double_plus_one_size = (length+1)*sizeof(double);  // TODO reduce size properly
       gpuErrchk(cudaMalloc(&d_tvec, (length+1)*sizeof(double)));
-
-      gpuErrchk(cudaMalloc(&d_evec, (length+1)*sizeof(double)));
-
-      gpuErrchk(cudaMalloc(&d_vvec, (length+1)*sizeof(double)));
-
-      gpuErrchk(cudaMalloc(&d_Mvec, (length+1)*sizeof(double)));
-
-      gpuErrchk(cudaMalloc(&d_Svec, (length+1)*sizeof(double)));
-
-      gpuErrchk(cudaMalloc(&d_gimvec, (length+1)*sizeof(double)));
-
-      gpuErrchk(cudaMalloc(&d_Phivec, (length+1)*sizeof(double)));
-
-      gpuErrchk(cudaMalloc(&d_alpvec, (length+1)*sizeof(double)));
-
-      gpuErrchk(cudaMalloc(&d_nuvec, (length+1)*sizeof(double)));
-
-      gpuErrchk(cudaMalloc(&d_gimdotvec, (length+1)*sizeof(double)));
 
 
       NUM_THREADS = 256;
@@ -182,8 +182,8 @@ void GPUAAK::gpu_gen_AAK(
     cudaError_t err;
     gpuErrchk(cudaMemcpy(d_tvec, tvec, (length+1)*sizeof(double), cudaMemcpyHostToDevice));
 
+    printf("check\n");
     gpuErrchk(cudaMemcpy(d_evec, evec, (length+1)*sizeof(double), cudaMemcpyHostToDevice));
-
     gpuErrchk(cudaMemcpy(d_vvec, vvec, (length+1)*sizeof(double), cudaMemcpyHostToDevice));
 
     gpuErrchk(cudaMemcpy(d_Mvec, Mvec, (length+1)*sizeof(double), cudaMemcpyHostToDevice));
@@ -406,15 +406,15 @@ GPUAAK::~GPUAAK() {
   cudaFree(d_hI);
   cudaFree(d_hII);
   cudaFree(d_tvec);
-  cudaFree(d_evec);
-  cudaFree(d_vvec);
-  cudaFree(d_Mvec);
-  cudaFree(d_Svec);
-  cudaFree(d_gimvec);
-  cudaFree(d_Phivec);
-  cudaFree(d_alpvec);
-  cudaFree(d_nuvec);
-  cudaFree(d_gimdotvec);
+  //destroyInterpArrayContainer(d_trajectories, trajectories, 9);
+  for (int i=0; i<9; i++){
+      gpuErrchk_here(cudaFree(trajectories[i].array));
+      gpuErrchk_here(cudaFree(trajectories[i].coeff_1));
+      gpuErrchk_here(cudaFree(trajectories[i].coeff_2));
+      gpuErrchk_here(cudaFree(trajectories[i].coeff_3));
+  }
+  gpuErrchk_here(cudaFree(d_trajectories));
+  free(trajectories);
   cudaFree(d_data_channel1);
   cudaFree(d_data_channel2);
   cudaFree(d_noise_channel1_inv);

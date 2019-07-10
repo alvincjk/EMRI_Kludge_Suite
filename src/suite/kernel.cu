@@ -2,7 +2,7 @@
 #include <math.h>
 #include <stdlib.h>
 #include <cuComplex.h>
-
+#include "interpolate.hh"
 #include "Globals.h"
 
 __device__

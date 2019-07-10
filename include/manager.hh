@@ -7,6 +7,7 @@
 #include "cuComplex.h"
 #include "cublas_v2.h"
 #include <cufft.h>
+#include <interpolate.hh>
 
 typedef complex<double> cmplx;
 
@@ -46,15 +47,18 @@ class GPUAAK {
   double *gimdotvec;
 
   double *d_tvec;
-  double *d_evec;
-  double *d_vvec;
-  double *d_Mvec;
-  double *d_Svec;
-  double *d_gimvec;
-  double *d_Phivec;
-  double *d_alpvec;
-  double *d_nuvec;
-  double *d_gimdotvec;
+  InterpArrayContainer *d_trajectories;
+  InterpArrayContainer *trajectories;
+  size_t numBytes;
+  double * d_evec;
+  double * d_vvec;
+  double * d_Mvec;
+  double * d_Svec;
+  double * d_gimvec;
+  double * d_Phivec;
+  double * d_alpvec;
+  double * d_nuvec;
+  double * d_gimdotvec;
 
   double iota;
   double s;
