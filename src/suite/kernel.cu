@@ -113,6 +113,27 @@ void d_RotCoeff(double rot[],double iota,double theta_S,double phi_S,double thet
   rot[3]=rot[0];
 }
 
+__device__
+void find_index_and_xout(int *index, double *x_out, double *x_out2, double *x_out3, double dx, double x_new, double *x_old, int length){
+    double x_trans;
+    *index = floor((x_new - x_old[0])/dx);
+    if (*index >= length - 1) *index = length - 2;
+    x_trans = (x_new - x_old[*index])/(x_old[*index+1] - x_old[*index]);
+    *x_out = x_trans;
+    *x_out2 = x_trans*x_trans;
+    *x_out3 = x_trans*x_trans*x_trans;
+}
+
+__device__
+double interpolate_array(InterpArrayContainer array_container, double x, double x2, double x3, int index){
+    double coeff_0 = array_container.array[index];
+    double coeff_1 = array_container.coeff_1[index];
+    double coeff_2 = array_container.coeff_2[index];
+    double coeff_3 = array_container.coeff_3[index];
+    double return_val = coeff_0 + coeff_1*x + coeff_2*x2 + coeff_3*x3;
+    return return_val;
+}
+
 __global__
 void kernel_create_waveform(double *t, double *hI, double *hII, double *tvec, InterpArrayContainer evec, InterpArrayContainer vvec, InterpArrayContainer Mvec, InterpArrayContainer Svec, InterpArrayContainer gimvec, InterpArrayContainer Phivec, InterpArrayContainer alpvec, InterpArrayContainer nuvec, InterpArrayContainer gimdotvec, double lam, double qS, double phiS, double qK, double phiK, bool mich, int vlength,int nmodes, int i_plunge, int i_buffer, double zeta, double M_phys, double timestep){
 
@@ -131,20 +152,24 @@ void kernel_create_waveform(double *t, double *hI, double *hII, double *tvec, In
   double halfsqrt3=sqrt(3.)/2.;
   // ----- compute waveform from t_start to t_end -----
   //for(int i=0;i<vlength;i++){
+  int index;
+  double x, x2, x3;
   if (i<=i_plunge+i_buffer){
     t[i]=timestep*i;
     hI[i]=0.;
     hII[i]=0.;
 
-    double e=evec.array[i];
-    double v=vvec.array[i];
-    double M=Mvec.array[i];
-    double S=Svec.array[i];
-    double gim=gimvec.array[i];
-    double Phi=Phivec.array[i];
-    double alp=alpvec.array[i];
-    double nu=nuvec.array[i];
-    double gimdot=gimdotvec.array[i];
+    find_index_and_xout(&index, &x, &x2, &x3, timestep, t[i], tvec, vlength);
+
+    double e=interpolate_array(evec, x, x2, x3, index); //evec.array[i];
+    double v=interpolate_array(vvec, x, x2, x3, index); //vvec.array[i];
+    double M=interpolate_array(Mvec, x, x2, x3, index); //Mvec.array[i];
+    double S=interpolate_array(Svec, x, x2, x3, index); //Svec.array[i];
+    double gim=interpolate_array(gimvec, x, x2, x3, index); //gimvec.array[i];
+    double Phi=interpolate_array(Phivec, x, x2, x3, index); //Phivec.array[i];
+    double alp=interpolate_array(alpvec, x, x2, x3, index); //alpvec.array[i];
+    double nu=interpolate_array(nuvec, x, x2, x3, index); //nuvec.array[i];
+    double gimdot=interpolate_array(gimdotvec, x, x2, x3, index); //gimdotvec.array[i];
 
     double cosalp=cos(alp);
     double sinalp=sin(alp);
