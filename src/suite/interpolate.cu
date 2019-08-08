@@ -21,6 +21,8 @@ inline void gpuAssert_here(cudaError_t code, const char *file, int line, bool ab
 #define CUDA_CALL(X) ERR_NE((X),cudaSuccess)
 #define CUSPARSE_CALL(X) ERR_NE((X),CUSPARSE_STATUS_SUCCESS)
 using namespace std;
+
+
 InterpArrayContainer * createInterpArrayContainer(size_t *numBytes, int num_arr, int num_points){
 
     InterpArrayContainer *cpu_array_container;
@@ -69,13 +71,13 @@ void fill_B(InterpArrayContainer *arr_container, double *B, int length_per_arr, 
     if (i >= length_per_arr) return;
 
             if (i == length_per_arr - 1){
-                B[j*length_per_arr + i] = 3.0* arr_container[j].array[i] - arr_container[j].array[(i-1)];
+                B[j*length_per_arr + i] = 3.0* (arr_container[j].array[i] - arr_container[j].array[(i-1)]);
 
             } else if (i == 0){
-                B[j*length_per_arr + i] = 3.0* arr_container[j].array[1] - arr_container[j].array[0];
+                B[j*length_per_arr + i] = 3.0* (arr_container[j].array[1] - arr_container[j].array[0]);
 
             } else{
-                B[j*length_per_arr + i] = 3.0* arr_container[j].array[(i+1)] - arr_container[j].array[(i-1)];
+                B[j*length_per_arr + i] = 3.0* (arr_container[j].array[(i+1)] - arr_container[j].array[(i-1)]);
             }
 }
 
@@ -94,6 +96,11 @@ void set_spline_constants(InterpArrayContainer *arr_container, double *B, int le
             arr_container[j].coeff_1[i] = D_i;
             arr_container[j].coeff_2[i] = 3.0 * (y_ip1 - y_i) - 2.0*D_i - D_ip1;
             arr_container[j].coeff_3[i] = 2.0 * (y_i - y_ip1) + D_i + D_ip1;
+
+            /*# if __CUDA_ARCH__>=200
+            if ((i % 2000 == 0) && (j == 0))
+                printf("%d, %e, %e, %e, %e \n", i, arr_container[j].array[i], arr_container[j].coeff_1[i], arr_container[j].coeff_2[i], arr_container[j].coeff_3[i]);
+            #endif //*/
 }
 
 
@@ -167,6 +174,8 @@ void Interpolate::setup(InterpArrayContainer *array_container, int m_, int n_){
     cudaDeviceSynchronize();
     gpuErrchk_here(cudaGetLastError());
 
+    double *checker = new double[m*n];
+
     CUSPARSE_CALL( cusparseCreate(&handle) );
     cusparseStatus_t status = cusparseDgtsv_nopivot(handle, m, n, d_dl, d_d, d_du, d_B, m);
     if (status !=  CUSPARSE_STATUS_SUCCESS) assert(0);
@@ -175,6 +184,14 @@ void Interpolate::setup(InterpArrayContainer *array_container, int m_, int n_){
     set_spline_constants<<<interpGrid, NUM_THREADS>>>(array_container, d_B, m, n);
     cudaDeviceSynchronize();
     gpuErrchk_here(cudaGetLastError());
+
+    /*cudaMemcpy(checker, d_B, m*n*sizeof(double), cudaMemcpyDeviceToHost);
+    for (int i=0; i<n; i++){
+        for (int j=0; j<m; j+=100){
+            printf("%d %d, %e\n", i, j, checker[i*m + j]);
+        }
+    }//*/
+    delete[] checker;
 }
 
 __host__ Interpolate::~Interpolate(){

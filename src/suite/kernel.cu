@@ -119,23 +119,35 @@ void find_index_and_xout(int *index, double *x_out, double *x_out2, double *x_ou
     *index = floor((x_new - x_old[0])/dx);
     if (*index >= length - 1) *index = length - 2;
     x_trans = (x_new - x_old[*index])/(x_old[*index+1] - x_old[*index]);
+
     *x_out = x_trans;
     *x_out2 = x_trans*x_trans;
     *x_out3 = x_trans*x_trans*x_trans;
+
+    /*# if __CUDA_ARCH__>=200
+    if (x_new == 1.000100e+06)
+        printf("interp %d, %e %e, %e, %e, %e, %e\n", *index, dx, x_old[0], x_new, x_old[*index], x_old[*index+1], x_trans);
+    #endif //*/
 }
 
 __device__
-double interpolate_array(InterpArrayContainer array_container, double x, double x2, double x3, int index){
+double interpolate_array(InterpArrayContainer array_container, double x, double x2, double x3, int index, double x_new){
     double coeff_0 = array_container.array[index];
     double coeff_1 = array_container.coeff_1[index];
     double coeff_2 = array_container.coeff_2[index];
     double coeff_3 = array_container.coeff_3[index];
     double return_val = coeff_0 + coeff_1*x + coeff_2*x2 + coeff_3*x3;
+
+    /*# if __CUDA_ARCH__>=200
+    if ((x_new <= 100.0))
+        printf("interp2 %d, %e %e, %e, %e, %.18e, %.18e, %.18e, %.18e\n", index, x, x2, x3, x_new, coeff_0, coeff_1, coeff_2, coeff_3);
+    #endif //*/
+
     return return_val;
 }
 
 __global__
-void kernel_create_waveform(double *t, double *hI, double *hII, double *tvec, InterpArrayContainer evec, InterpArrayContainer vvec, InterpArrayContainer Mvec, InterpArrayContainer Svec, InterpArrayContainer gimvec, InterpArrayContainer Phivec, InterpArrayContainer alpvec, InterpArrayContainer nuvec, InterpArrayContainer gimdotvec, double lam, double qS, double phiS, double qK, double phiK, bool mich, int vlength,int nmodes, int i_plunge, int i_buffer, double zeta, double M_phys, double timestep){
+void kernel_create_waveform(double *t, double *hI, double *hII, double *tvec, InterpArrayContainer evec, InterpArrayContainer vvec, InterpArrayContainer Mvec, InterpArrayContainer Svec, InterpArrayContainer gimvec, InterpArrayContainer Phivec, InterpArrayContainer alpvec, InterpArrayContainer nuvec, InterpArrayContainer gimdotvec, double lam, double qS, double phiS, double qK, double phiK, bool mich, int init_length, int vlength,int nmodes, int i_plunge, int i_buffer, double zeta, double M_phys, double init_dt, double timestep){
 
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i >= vlength) return;
@@ -154,22 +166,31 @@ void kernel_create_waveform(double *t, double *hI, double *hII, double *tvec, In
   //for(int i=0;i<vlength;i++){
   int index;
   double x, x2, x3;
-  if (i<=i_plunge+i_buffer){
-    t[i]=timestep*i;
+  double time = timestep*i;
+  t[i]= time;
+  double t_plunge=tvec[i_plunge];
+  double t_zero=t_plunge+timestep*i_buffer;
+  if (time <=t_zero){
+
     hI[i]=0.;
     hII[i]=0.;
 
-    find_index_and_xout(&index, &x, &x2, &x3, timestep, t[i], tvec, vlength);
+    find_index_and_xout(&index, &x, &x2, &x3, init_dt, timestep*i, tvec, init_length);
 
-    double e=interpolate_array(evec, x, x2, x3, index); //evec.array[i];
-    double v=interpolate_array(vvec, x, x2, x3, index); //vvec.array[i];
-    double M=interpolate_array(Mvec, x, x2, x3, index); //Mvec.array[i];
-    double S=interpolate_array(Svec, x, x2, x3, index); //Svec.array[i];
-    double gim=interpolate_array(gimvec, x, x2, x3, index); //gimvec.array[i];
-    double Phi=interpolate_array(Phivec, x, x2, x3, index); //Phivec.array[i];
-    double alp=interpolate_array(alpvec, x, x2, x3, index); //alpvec.array[i];
-    double nu=interpolate_array(nuvec, x, x2, x3, index); //nuvec.array[i];
-    double gimdot=interpolate_array(gimdotvec, x, x2, x3, index); //gimdotvec.array[i];
+    double e=interpolate_array(evec, x, x2, x3, index, timestep*i); //evec.array[i];
+    double v=interpolate_array(vvec, x, x2, x3, index, timestep*i); //vvec.array[i];
+    double M=interpolate_array(Mvec, x, x2, x3, index, timestep*i); //Mvec.array[i];
+    double S=interpolate_array(Svec, x, x2, x3, index, timestep*i); //Svec.array[i];
+    double gim=interpolate_array(gimvec, x, x2, x3, index, timestep*i); //gimvec.array[i];
+    double Phi=interpolate_array(Phivec, x, x2, x3, index, timestep*i); //Phivec.array[i];
+    double alp=interpolate_array(alpvec, x, x2, x3, index, timestep*i); //alpvec.array[i];
+    double nu=interpolate_array(nuvec, x, x2, x3, index, timestep*i); //nuvec.array[i];
+    double gimdot=interpolate_array(gimdotvec, x, x2, x3, index, timestep*i); //gimdotvec.array[i];
+
+    /*# if __CUDA_ARCH__>=200
+    if ((i >= 100010) && (i <= 100020))
+        printf("%d %e %.18e %.18e %e %e %e %e %e\n", i, t[i], e, v, gim, Phi, alp, nu, gimdot);
+    #endif //*/
 
     double cosalp=cos(alp);
     double sinalp=sin(alp);
@@ -273,10 +294,9 @@ void kernel_create_waveform(double *t, double *hI, double *hII, double *tvec, In
 
     }
   }
-  double t_plunge=tvec[i_plunge];
-  double t_zero=t_plunge+timestep*i_buffer;
-  if ((i>i_plunge) &&(i<vlength)){
-    if(i<i_plunge+i_buffer){
+
+  if ((time>t_plunge) &&(i<vlength)){
+    if(time<t_zero){
       hI[i]=hI[i]/(exp((t_plunge-t_zero)/(t[i]-t_plunge)+(t_plunge-t_zero)/(t[i]-t_zero))+1.);
       hII[i]=hII[i]/(exp((t_plunge-t_zero)/(t[i]-t_plunge)+(t_plunge-t_zero)/(t[i]-t_zero))+1.);
     }

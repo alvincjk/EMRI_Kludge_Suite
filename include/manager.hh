@@ -14,8 +14,10 @@ typedef complex<double> cmplx;
 
 class GPUAAK {
   // pointer to the GPU memory where the array is stored
+  int init_length;
   int length;
   double T_fit;
+  double init_dt;
   double dt;
   bool LISA;
   bool backint;
@@ -79,6 +81,7 @@ class GPUAAK {
 
   int NUM_THREADS;
   int num_blocks;
+  int num_blocks_wave;
 
   double zeta;
   int i_plunge;
@@ -105,7 +108,9 @@ public:
    */
 
    GPUAAK (double T_fit_,
+       int init_length_,
        int length_,
+       double init_dt_,
        double dt_,
        bool LISA_,
        bool backint_,

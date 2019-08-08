@@ -40,7 +40,9 @@ inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=t
 
 
 GPUAAK::GPUAAK (double T_fit_,
+    int init_length_,
     int length_,
+    double init_dt_,
     double dt_,
     bool LISA_,
     bool backint_,
@@ -50,7 +52,9 @@ GPUAAK::GPUAAK (double T_fit_,
     double *noise_channel2_inv_){
 
     T_fit = T_fit_;
+    init_length = init_length_;
     length = length_;
+    init_dt = init_dt_;
     dt = dt_;
     LISA = LISA_;
     backint = backint_;
@@ -67,21 +71,21 @@ GPUAAK::GPUAAK (double T_fit_,
 
     // DECLARE ALL THE  NECESSARY STRUCTS
 
-    tvec = new double[length+1];
-    evec = new double[length+1];
-    vvec = new double[length+1];
-    Mvec = new double[length+1];
-    Svec = new double[length+1];
-    gimvec = new double[length+1];
-    Phivec = new double[length+1];
-    alpvec = new double[length+1];
-    nuvec = new double[length+1];
-    gimdotvec = new double[length+1];
+    tvec = new double[init_length+1];
+    evec = new double[init_length+1];
+    vvec = new double[init_length+1];
+    Mvec = new double[init_length+1];
+    Svec = new double[init_length+1];
+    gimvec = new double[init_length+1];
+    Phivec = new double[init_length+1];
+    alpvec = new double[init_length+1];
+    nuvec = new double[init_length+1];
+    gimdotvec = new double[init_length+1];
 
 
 
         size_t numBytes_ = 0;
-        trajectories = createInterpArrayContainer(&numBytes_, 9, length+1);
+        trajectories = createInterpArrayContainer(&numBytes_, 9, init_length+1);
         numBytes = numBytes_;
         d_trajectories = createInterpArrayContainer_gpu(numBytes);
 
@@ -118,7 +122,8 @@ GPUAAK::GPUAAK (double T_fit_,
 
 
       NUM_THREADS = 256;
-      num_blocks = std::ceil((length + NUM_THREADS -1)/NUM_THREADS);
+      num_blocks = std::ceil((init_length + 1 + NUM_THREADS -1)/NUM_THREADS);
+      num_blocks_wave = std::ceil((length + 1 + NUM_THREADS -1)/NUM_THREADS);
 
      // cufftHandle plan_;
       //plan = plan_;
@@ -134,7 +139,7 @@ GPUAAK::GPUAAK (double T_fit_,
           exit(0);
       }
 
-    interp.alloc_arrays(length + 1, 9);
+    interp.alloc_arrays(init_length + 1, 9);
 
 }
 
@@ -182,32 +187,31 @@ void GPUAAK::gpu_gen_AAK(
     zeta=par[0]/D/Gpc; // M/D
 
     cudaError_t err;
-    gpuErrchk(cudaMemcpy(d_tvec, tvec, (length+1)*sizeof(double), cudaMemcpyHostToDevice));
+    gpuErrchk(cudaMemcpy(d_tvec, tvec, (init_length+1)*sizeof(double), cudaMemcpyHostToDevice));
 
-    printf("check\n");
-    gpuErrchk(cudaMemcpy(d_evec.array, evec, (length+1)*sizeof(double), cudaMemcpyHostToDevice));
-    gpuErrchk(cudaMemcpy(d_vvec.array, vvec, (length+1)*sizeof(double), cudaMemcpyHostToDevice));
+    gpuErrchk(cudaMemcpy(d_evec.array, evec, (init_length+1)*sizeof(double), cudaMemcpyHostToDevice));
+    gpuErrchk(cudaMemcpy(d_vvec.array, vvec, (init_length+1)*sizeof(double), cudaMemcpyHostToDevice));
 
-    gpuErrchk(cudaMemcpy(d_Mvec.array, Mvec, (length+1)*sizeof(double), cudaMemcpyHostToDevice));
+    gpuErrchk(cudaMemcpy(d_Mvec.array, Mvec, (init_length+1)*sizeof(double), cudaMemcpyHostToDevice));
 
-    gpuErrchk(cudaMemcpy(d_Svec.array, Svec, (length+1)*sizeof(double), cudaMemcpyHostToDevice));
+    gpuErrchk(cudaMemcpy(d_Svec.array, Svec, (init_length+1)*sizeof(double), cudaMemcpyHostToDevice));
 
-    gpuErrchk(cudaMemcpy(d_gimvec.array, gimvec, (length+1)*sizeof(double), cudaMemcpyHostToDevice));
+    gpuErrchk(cudaMemcpy(d_gimvec.array, gimvec, (init_length+1)*sizeof(double), cudaMemcpyHostToDevice));
 
-    gpuErrchk(cudaMemcpy(d_Phivec.array, Phivec, (length+1)*sizeof(double), cudaMemcpyHostToDevice));
+    gpuErrchk(cudaMemcpy(d_Phivec.array, Phivec, (init_length+1)*sizeof(double), cudaMemcpyHostToDevice));
 
-    gpuErrchk(cudaMemcpy(d_alpvec.array, alpvec, (length+1)*sizeof(double), cudaMemcpyHostToDevice));
+    gpuErrchk(cudaMemcpy(d_alpvec.array, alpvec, (init_length+1)*sizeof(double), cudaMemcpyHostToDevice));
 
-    gpuErrchk(cudaMemcpy(d_nuvec.array, nuvec, (length+1)*sizeof(double), cudaMemcpyHostToDevice));
+    gpuErrchk(cudaMemcpy(d_nuvec.array, nuvec, (init_length+1)*sizeof(double), cudaMemcpyHostToDevice));
 
-    gpuErrchk(cudaMemcpy(d_gimdotvec.array, gimdotvec, (length+1)*sizeof(double), cudaMemcpyHostToDevice));
+    gpuErrchk(cudaMemcpy(d_gimdotvec.array, gimdotvec, (init_length+1)*sizeof(double), cudaMemcpyHostToDevice));
 
     gpuErrchk(cudaMemcpy(d_trajectories, trajectories, numBytes, cudaMemcpyHostToDevice));
 
-    interp.setup(d_trajectories, (length + 1), 9);
+    interp.setup(d_trajectories, (init_length + 1), 9);
 
     /* main: evaluate model at given frequencies */
-    kernel_create_waveform<<<num_blocks, NUM_THREADS>>>(d_t, d_hI, d_hII, d_tvec, d_evec, d_vvec, d_Mvec, d_Svec, d_gimvec, d_Phivec, d_alpvec, d_nuvec, d_gimdotvec, iota, theta_S, phi_S, theta_K, phi_K, LISA, length, nmodes, i_plunge, i_buffer, zeta, M, dt);  //iota = lam
+    kernel_create_waveform<<<num_blocks_wave, NUM_THREADS>>>(d_t, d_hI, d_hII, d_tvec, d_evec, d_vvec, d_Mvec, d_Svec, d_gimvec, d_Phivec, d_alpvec, d_nuvec, d_gimdotvec, iota, theta_S, phi_S, theta_K, phi_K, LISA, init_length, length, nmodes, i_plunge, i_buffer, zeta, M, init_dt, dt);  //iota = lam
 
      cudaDeviceSynchronize();
      gpuErrchk(cudaGetLastError());
@@ -261,7 +265,7 @@ void GPUAAK::run_phase_trajectory(
     gktraj3.ecc=e;
     int maxsteps=100;
     int steps=0;
-    double dt_fit=min(T_fit,length*dt/SOLARMASSINSEC/M/M*mu)/(maxsteps-1);
+    double dt_fit=min(T_fit,init_length*init_dt/SOLARMASSINSEC/M/M*mu)/(maxsteps-1);
     TrajData *traj3;
     traj3=(TrajData*)malloc((size_t)((maxsteps+1)*sizeof(TrajData)));
     gktraj3.Eccentric(dt_fit,traj3,maxsteps,steps);
@@ -298,7 +302,7 @@ void GPUAAK::run_phase_trajectory(
     par[11]=alph;
 
 
-    PNevolution(tvec,evec,vvec,Mvec,Svec,gimvec,Phivec,alpvec,nuvec,gimdotvec,dt,length,par,e_traj,v_map,M,M_map,s,s_map,dt_map,steps,&i_plunge,&i_buffer,backint);
+    PNevolution(tvec,evec,vvec,Mvec,Svec,gimvec,Phivec,alpvec,nuvec,gimdotvec,init_dt,init_length,par,e_traj,v_map,M,M_map,s,s_map,dt_map,steps,&i_plunge,&i_buffer,backint);
 
 }
 
