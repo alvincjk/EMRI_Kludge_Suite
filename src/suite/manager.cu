@@ -208,6 +208,9 @@ void GPUAAK::gpu_gen_AAK(
 
     gpuErrchk(cudaMemcpy(d_trajectories, trajectories, numBytes, cudaMemcpyHostToDevice));
 
+    //for (int i=0; i<100; i++) printf("%.18e\n", gimdotvec[i]);
+    //printf("\n\n\nBREAK BREAK\n\n\n");
+
     interp.setup(d_trajectories, (init_length + 1), 9);
 
     /* main: evaluate model at given frequencies */
@@ -323,7 +326,7 @@ void GPUAAK::Likelihood (double *like_out_){
     cudaDeviceSynchronize();
     gpuErrchk(cudaGetLastError());
 
-    likelihood_prep<<<num_blocks, NUM_THREADS>>>((cuDoubleComplex*)d_hI, (cuDoubleComplex*)d_hII, d_noise_channel1_inv, d_noise_channel2_inv, fft_length);
+    likelihood_prep<<<num_blocks_wave, NUM_THREADS>>>((cuDoubleComplex*)d_hI, (cuDoubleComplex*)d_hII, d_noise_channel1_inv, d_noise_channel2_inv, fft_length);
     cudaDeviceSynchronize();
     gpuErrchk(cudaGetLastError());
 

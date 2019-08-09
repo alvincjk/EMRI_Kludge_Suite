@@ -188,8 +188,9 @@ void kernel_create_waveform(double *t, double *hI, double *hII, double *tvec, In
     double gimdot=interpolate_array(gimdotvec, x, x2, x3, index, timestep*i); //gimdotvec.array[i];
 
     /*# if __CUDA_ARCH__>=200
-    if ((i >= 100010) && (i <= 100020))
-        printf("%d %e %.18e %.18e %e %e %e %e %e\n", i, t[i], e, v, gim, Phi, alp, nu, gimdot);
+    //if ((index >= 12000) && (index <= 12100))
+        //printf("%d, %.18e, %.18e, %.18e, %.18e, %.18e, %.18e, %.18e, %.18e, %.18e, %.18e, %.18e\n", i, e, t[i], tvec[index], tvec[index+1], evec.array[index], evec.coeff_1[index], evec.coeff_2[index], evec.coeff_3[index], x, x2, x3);
+        printf("%d, %.18e, %.18e, %.18e, %.18e\n", i, t[i], e, nu, gimdot);
     #endif //*/
 
     double cosalp=cos(alp);
@@ -317,4 +318,8 @@ void likelihood_prep(cuDoubleComplex *template_channel1, cuDoubleComplex *templa
     if (i >= length) return;
     template_channel1[i] = cuCmul(template_channel1[i], make_cuDoubleComplex(noise_channel1_inv[i], 0.0));
     template_channel2[i] = cuCmul(template_channel2[i], make_cuDoubleComplex(noise_channel2_inv[i], 0.0));
+  /*# if __CUDA_ARCH__>=200
+    if (i >= 24500)
+        printf("%d, %.18e, %.18e, %.18e\n", i, cuCreal(template_channel1[i]), cuCimag(template_channel1[i]), noise_channel1_inv[i]);
+    #endif //*/
 }
