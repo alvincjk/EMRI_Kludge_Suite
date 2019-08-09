@@ -159,6 +159,10 @@ void GPUAAK::gpu_gen_AAK(
     double phi_K_,
     double D_){
 
+    /*cudaEvent_t start, stop;
+    cudaEventCreate(&start);
+    cudaEventCreate(&stop);
+    cudaEventRecord(start);*/
     GPUAAK::run_phase_trajectory(
         iota_,
         s_,
@@ -174,10 +178,15 @@ void GPUAAK::gpu_gen_AAK(
         theta_K_,
         phi_K_,
         D_);
-
+    /*cudaEventRecord(stop);
+    cudaEventSynchronize(stop);
     float milliseconds = 0;
+    cudaEventElapsedTime(&milliseconds, start, stop);
+    printf("time cpu: %lf\n", milliseconds/1000.0);*/
 
 
+
+    //cudaEventRecord(start);
     // Initialize inputs
     // ----- number of modes summed -----
     int nmodes=(int)(30*par[3]);
@@ -218,6 +227,10 @@ void GPUAAK::gpu_gen_AAK(
 
      cudaDeviceSynchronize();
      gpuErrchk(cudaGetLastError());
+     /*cudaEventRecord(stop);
+     cudaEventSynchronize(stop);
+     cudaEventElapsedTime(&milliseconds, start, stop);
+     printf("time gpu: %lf\n", milliseconds/1000.0);*/
 
 
          /*double *hI = new double[length+2];
@@ -312,6 +325,10 @@ void GPUAAK::run_phase_trajectory(
 void GPUAAK::Likelihood (double *like_out_){
 
     //cudaMemcpy(hI, d_hI, (length+2)*sizeof(double), cudaMemcpyDeviceToHost);
+    /*cudaEvent_t start, stop;
+    cudaEventCreate(&start);
+    cudaEventCreate(&stop);
+    cudaEventRecord(start);*/
 
     if (cufftExecD2Z(plan, d_hI, (cufftDoubleComplex*)d_hI) != CUFFT_SUCCESS){
     fprintf(stderr, "CUFFT error: ExecC2C Forward failed");
@@ -395,6 +412,11 @@ void GPUAAK::Likelihood (double *like_out_){
      like_out_[0] = 4*d_h;
      like_out_[1] = 4*h_h;
 
+     /*cudaEventRecord(stop);
+     cudaEventSynchronize(stop);
+     float milliseconds = 0;
+     cudaEventElapsedTime(&milliseconds, start, stop);
+     printf("time like: %lf\n\n", milliseconds/1000.0);*/
 }
 
 void GPUAAK::GetWaveform (double *t_, double* hI_, double* hII_) {

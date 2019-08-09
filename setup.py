@@ -148,7 +148,7 @@ def gpu_setup():
     include_gsl_dir = "/opt/local/include"
 
     ext = Extension('gpuAAK',
-            sources = ['src/suite/AAK.cc', 'src/suite/manager.cu', 'AAKwrapper/GPUAAK.pyx'],
+            sources = ['src/suite/AAK.cc', 'src/cuda/manager.cu', 'AAKwrapper/GPUAAK.pyx'],
             library_dirs = [lib_gsl_dir, CUDA['lib64'], '/usr/local/lib', './lib'],
             libraries = ['cudart', "cublas", "cusparse", "cufft", "gsl", "gslcblas", 'KS', 'IEKG', 'LB', 'NR', 'RRGW', 'GKG', 'Circ'],
             language = 'c++',
@@ -163,7 +163,7 @@ def gpu_setup():
                     '-arch=sm_70', '--ptxas-options=-v', '-c',
                     '--compiler-options', "'-fPIC'"]#,"-G", "-g"] # for debugging
                 },
-                include_dirs = [numpy_include, include_gsl_dir, CUDA['include'], './include', './src', './src/suite']
+                include_dirs = [numpy_include, include_gsl_dir, CUDA['include'], './include', './src', './src/suite', './src/cuda']
             )
 
 
