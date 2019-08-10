@@ -148,7 +148,7 @@ def gpu_setup():
     include_gsl_dir = "/opt/local/include"
 
     ext = Extension('gpuAAK',
-            sources = ['src/suite/AAK.cc', 'src/cuda/manager.cu', 'AAKwrapper/GPUAAK.pyx'],
+            sources = ['src/suite/AAK.cc', 'src/cuda/manager.cu', 'pygpuAAK/GPUAAK.pyx'],
             library_dirs = [lib_gsl_dir, CUDA['lib64'], '/usr/local/lib', './lib'],
             libraries = ['cudart', "cublas", "cusparse", "cufft", "gsl", "gslcblas", 'KS', 'IEKG', 'LB', 'NR', 'RRGW', 'GKG', 'Circ'],
             language = 'c++',
@@ -182,15 +182,30 @@ def gpu_setup():
           zip_safe = False)
 
 
+def gpu_wrapper_install():
+    setup(name = 'pygpuAAK',
+          # Random metadata. there's more you can supply
+          author = 'Michael Katz',
+          version = '0.1',
+          packages=['pygpuAAK'],
+           py_modules=['pygpuAAK.pygpuAAK'],
+
+          # Since the package has c code, the egg cannot be zipped
+          zip_safe = False)
+
+
 print_strings = []
 try:
     print_strings.append('ATTEMPTED CUDA INSTALL')
     gpu_setup()
     print_strings.append('INSTALLED FOR CUDA: gpuAAK')
+    gpu_wrapper_install()
+    print_strings.append('INSTALLED WRAPPER FOR CUDA: pygpuAAK')
 except OSError:
     print_strings.append('COULD NOT FIND CUDA ON PATH.'
                          + 'The nvcc binary could not be located in your $PATH. '
                          + 'Either add it to your path, or set $CUDAHOME')
+
 
 cpu_setup()
 print_strings.append('INSTALLED C++ VERSION: AAK')

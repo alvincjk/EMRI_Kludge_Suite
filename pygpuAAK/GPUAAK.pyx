@@ -76,3 +76,9 @@ cdef class GPUAAK:
         cdef np.ndarray[ndim=1, dtype=np.float64_t] like_ = np.zeros((2,), dtype=np.float64)
         self.g.Likelihood(&like_[0])
         return like_
+
+    def WaveformThroughLikelihood(self, iota, s, p, e, M, mu, gamma, psi, alph, theta_S,
+                        phi_S, theta_K, phi_K, D):
+        self.gpu_gen_AAK(iota, s, p, e, M, mu, gamma, psi, alph, theta_S,
+                            phi_S, theta_K, phi_K, D)
+        return self.Likelihood()
