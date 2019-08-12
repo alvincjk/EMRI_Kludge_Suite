@@ -8,7 +8,7 @@ This class will get translated into python via swig
 */
 
 #include <kernel.cu>
-#include <manager.hh>
+#include <AAK_manager.hh>
 #include <assert.h>
 #include <iostream>
 #include <stdlib.h>
@@ -129,6 +129,7 @@ GPUAAK::GPUAAK (double T_fit_,
       //plan = plan_;
 
       //cufftComplex *data;
+      printf("length: %d, %d\n", length, fft_length);
       if (cufftPlan1d(&plan, length, CUFFT_D2Z, BATCH) != CUFFT_SUCCESS){
         	fprintf(stderr, "CUFFT error: Plan creation failed");
         	return;	}
@@ -178,6 +179,7 @@ void GPUAAK::gpu_gen_AAK(
         theta_K_,
         phi_K_,
         D_);
+
     /*cudaEventRecord(stop);
     cudaEventSynchronize(stop);
     float milliseconds = 0;
@@ -448,5 +450,6 @@ GPUAAK::~GPUAAK() {
   cudaFree(d_noise_channel2_inv);
 
   cufftDestroy(plan);
+  cublasDestroy(handle);
 
 }

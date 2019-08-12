@@ -308,6 +308,10 @@ void kernel_create_waveform(double *t, double *hI, double *hII, double *tvec, In
   // ----------
 
 }
+# if __CUDA_ARCH__>=200
+  if (i == 1000)
+      printf("%d, %.18e, %.18e\n", i, hI[i], hII[i]);
+  #endif //*/
 
 }
 
@@ -316,10 +320,10 @@ __global__
 void likelihood_prep(cuDoubleComplex *template_channel1, cuDoubleComplex *template_channel2, double *noise_channel1_inv, double *noise_channel2_inv, int length){
     int i = blockIdx.x*blockDim.x + threadIdx.x;
     if (i >= length) return;
+    # if __CUDA_ARCH__>=200
+      if (i == 1000)
+          printf("%d, %.18e, %.18e, %.18e\n", i, cuCreal(template_channel1[i]), cuCimag(template_channel2[i]), noise_channel1_inv[i]);
+      #endif //*/
     template_channel1[i] = cuCmul(template_channel1[i], make_cuDoubleComplex(noise_channel1_inv[i], 0.0));
     template_channel2[i] = cuCmul(template_channel2[i], make_cuDoubleComplex(noise_channel2_inv[i], 0.0));
-  /*# if __CUDA_ARCH__>=200
-    if (i >= 24500)
-        printf("%d, %.18e, %.18e, %.18e\n", i, cuCreal(template_channel1[i]), cuCimag(template_channel1[i]), noise_channel1_inv[i]);
-    #endif //*/
 }
