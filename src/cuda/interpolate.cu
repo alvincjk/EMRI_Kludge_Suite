@@ -31,7 +31,6 @@ InterpArrayContainer * createInterpArrayContainer(size_t *numBytes, int num_arr,
 
     cpu_array_container = (InterpArrayContainer*)malloc(*numBytes);
 
-    printf("%d, %d\n", num_arr, num_points);
     for (int i=0; i<num_arr; i++){
 
         gpuErrchk_here(cudaMalloc( (void**)&(cpu_array_container[i].array), num_points*sizeof(double) ));

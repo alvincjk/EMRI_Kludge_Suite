@@ -129,7 +129,6 @@ GPUAAK::GPUAAK (double T_fit_,
       //plan = plan_;
 
       //cufftComplex *data;
-      printf("length: %d, %d\n", length, fft_length);
       if (cufftPlan1d(&plan, length, CUFFT_D2Z, BATCH) != CUFFT_SUCCESS){
         	fprintf(stderr, "CUFFT error: Plan creation failed");
         	return;	}

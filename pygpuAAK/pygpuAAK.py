@@ -64,13 +64,9 @@ class pyGPUAAK:
     def NLL(self, iota, s, p, e, M, mu, gamma, psi, alph, theta_S,
                         phi_S, theta_K, phi_K, D, return_snr=False, **kwargs):
 
-        self.generator.gpu_gen_AAK(iota, s, p, e, M, mu, gamma, psi, alph, theta_S,
-                            phi_S, theta_K, phi_K, D)
-        check = self.generator.Likelihood()
-
         d_h, h_h = self.generator.WaveformThroughLikelihood(iota, s, p, e, M, mu, gamma, psi, alph, theta_S,
                                                  phi_S, theta_K, phi_K, D)
-        import pdb; pdb.set_trace()
+
         if return_snr:
             return np.sqrt(h_h)
 
@@ -139,7 +135,7 @@ def test():
     }
 
     like_class = pyGPUAAK(data_stream, noise_channels, length, dt, init_dt, **kwargs)
-    num = 1
+    num = 5000
     st = time.perf_counter()
     for i in range(num):
         check2 = like_class.NLL(iota, s, p, e, M, mu, gamma, psi, alph, theta_S,
