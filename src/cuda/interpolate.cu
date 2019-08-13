@@ -1,4 +1,3 @@
-#include "manager.hh"
 #include "stdio.h"
 #include <assert.h>
 #include <cusparse_v2.h>
