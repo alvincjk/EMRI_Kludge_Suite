@@ -3,7 +3,7 @@ cimport numpy as np
 
 assert sizeof(int) == sizeof(np.int32_t)
 
-cdef extern from "manager.hh":
+cdef extern from "AAK_manager.hh":
     cdef cppclass GPUAAKwrap "GPUAAK":
         GPUAAKwrap(double, int, int,
         double, double,
@@ -44,6 +44,7 @@ cdef extern from "manager.hh":
 
         void GetWaveform(np.float64_t*, np.float64_t*, np.float64_t*)
         void Likelihood(np.float64_t*)
+
 
 cdef class GPUAAK:
     cdef int length

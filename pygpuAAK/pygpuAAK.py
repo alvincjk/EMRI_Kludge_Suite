@@ -36,7 +36,7 @@ class pyGPUAAK:
         self.data_channel2 = data_stream['channel2'].copy()
 
         freqs = np.fft.rfftfreq(self.length, d=dt)
-        df = 1./self.dt
+        df = 1./(self.length*self.dt)
 
         # whiten data stream
         self.data_stream = data_stream
@@ -135,14 +135,13 @@ def test():
     }
 
     like_class = pyGPUAAK(data_stream, noise_channels, length, dt, init_dt, **kwargs)
-    num = 5000
+    num = 1000
     st = time.perf_counter()
     for i in range(num):
         check2 = like_class.NLL(iota, s, p, e, M, mu, gamma, psi, alph, theta_S,
                                 phi_S, theta_K, phi_K, D)
     et = time.perf_counter()
-    print('Total time:', (et - st), '\n', 'Time per iter:', (et - st)/num, '\n', 'num iter:', num)
-    import pdb; pdb.set_trace()
+    print('Total time for {} likelihood calculations:'.format(num), (et - st), '\n', 'Time per likelihood calculation:', (et - st)/num, '\n')
 
 
 if __name__ == "__main__":
