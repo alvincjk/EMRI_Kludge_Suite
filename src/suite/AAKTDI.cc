@@ -487,6 +487,10 @@ void PNevolutionTDI(complex<double> **Xp, complex<double> **Xc, complex<double> 
   	}
   	// ----------
 
+   	for (int i=0; i<3; i++){
+       	free(q[i]);
+       	free(n[i]);
+   	}
   	free(R);
   	free(q);
   	free(n);
@@ -700,7 +704,8 @@ void waveformTDI(double *Xf_r, double *Xf_im, double *Yf_r, double *Yf_im, doubl
               	}
               	if (om_in != 0. && om_fin != 0.){
                  	// loop over fourier bins between two values of harmonic
-                 	for (int ii=ind_low; ii<=ind_up; ii++){
+                 	int ind_max = min(ind_up+1,(Nps+1)/2);
+                 	for (int ii=ind_low; ii<ind_max; ii++){
                     	Om = (double)ii * dOm;
                     	delta = (Om - om_in)/delom;
                     	eps = 1.-delta;
@@ -756,6 +761,14 @@ void waveformTDI(double *Xf_r, double *Xf_im, double *Yf_r, double *Yf_im, doubl
     	} //j loop
 	}
 
+	for(int i=0;i<5*nmodes;i++){
+    	free(Xp[i]);
+    	free(Xc[i]);
+    	free(Yp[i]);
+    	free(Yc[i]);
+    	free(Zp[i]);
+    	free(Zc[i]);
+    }
   	free(Xp);
   	free(Xc);
   	free(Yp);
