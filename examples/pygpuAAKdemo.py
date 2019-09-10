@@ -65,11 +65,11 @@ def LISA_Noise(f, L=2.5e9, f_star=19.09e-3, dur=4):
 def test():
     iota = 0.2
     s = 0.8
-    p = 10.0
+    p = 8.0
     e = 0.7
     T_fit = 1.0
-    init_length = 100000
-    length = 1000000
+    init_length = 315576
+    length = 3155760
     init_dt = 100.0
     dt = 10.0
     M = 1e6
@@ -81,7 +81,7 @@ def test():
     phi_S = 0.785
     theta_K = 1.05
     phi_K = 1.05
-    D = 5.0
+    D = 1.0
     LISA = True
     backint = True
 
@@ -144,7 +144,6 @@ def test():
                             phi_S, theta_K, phi_K, D, return_snr=True)
 
     print('SNR: ', snr, 'Likelihood:', likelihood)
-    import pdb; pdb.set_trace()
 
 if __name__ == "__main__":
     test()
