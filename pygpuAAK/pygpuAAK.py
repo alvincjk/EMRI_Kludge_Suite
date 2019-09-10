@@ -41,8 +41,8 @@ class pyGPUAAK:
         # whiten data stream
         self.data_stream = data_stream
 
-        self.noise_channel1_inv = 1./np.sqrt(noise_channels['channel1'])*np.sqrt(dt)  # dt dt df = dt
-        self.noise_channel2_inv = 1./np.sqrt(noise_channels['channel2'])*np.sqrt(dt)
+        self.noise_channel1_inv = 1./np.sqrt(noise_channels['channel1'])*np.sqrt(df)
+        self.noise_channel2_inv = 1./np.sqrt(noise_channels['channel2'])*np.sqrt(df)
 
         self.data_channel1 *= self.noise_channel1_inv
         self.data_channel2 *= self.noise_channel2_inv
