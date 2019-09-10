@@ -79,11 +79,11 @@ Jet Propulsion Laboratory
 `alvin.j.chua@jpl.nasa.gov`
 
 **Jonathan Gair**  
-Max Planck Institute for Gravitational Physics 
+Max Planck Institute for Gravitational Physics  
 `jonathan.gair@aei.mpg.de`
 
-**Michael Katz**
-Northwestern University
+**Michael Katz**  
+Northwestern University  
 `michaelkatz2016@u.northwestern.edu`
 
 The EMRI Kludge Suite is also based on code written by Leor Barack (for the AK) and Scott Hughes (for the NK). The TDI executables are based on an approximate derivation/implementation by Stanislav Babak. The Python wrapper for the AAK is provided by Michele Vallisneri.
