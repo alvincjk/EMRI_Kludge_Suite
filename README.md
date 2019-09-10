@@ -1,14 +1,14 @@
 # EMRI Kludge Suite
 
-**Version 0.4.2**
+**Version 0.5.0**
 
 This is a C/C++ suite that allows kludge waveforms for extreme-mass-ratio inspirals (EMRIs) to be generated with shared settings and parameters. The three waveforms included in the suite are the augmented analytic kludge (AAK) [1,2], the analytic kludge (AK) [3], and the numerical kludge (NK) [4]. EMRI Kludge Suite is part of the Black Hole Perturbation Toolkit; visit http://bhptoolkit.org for more information.
 
-NEW IN VERSION 0.4.0: Approximate TDI generation for the AAK/AK; standardisation of constants and conventions for the LISA Data Challenges.
+NEW IN VERSION 0.5.0: GPU implementation of AAK waveform and LISA noise-weighted inner product.
 
 Please check https://github.com/alvincjk/EMRI_Kludge_Suite for any version updates.
 
-&mdash; Alvin Chua, Mar 2019
+&mdash; Alvin Chua, Sep 2019
 
 ## Installation
 
@@ -21,7 +21,7 @@ The GSL and FFTW libraries are required for compilation. Clean up any previous i
 - `AK_TDI`
 - `AAK_Phase`
 
-Python support is also available for all AAK outputs, as well as the AK TDIs. The `AAKwrapper` module is installed by running `python setup.py install`; if root access is not available, try `python setup.py install --user` instead.
+Python support is available for all AAK outputs, as well as the AK TDIs. GPU functionality with Python interface has also been added for the AAK (waveform only). These modules are installed by running `python setup.py install`; if root access is not available, try `python setup.py install --user` instead.
 
 ## Usage
 
@@ -55,12 +55,16 @@ Running `bin/AAK_Phase examples/SetPar_Phase` will create two files in `./bin`:
 
 ### Python wrapper
 
-Finally, example Python usage is provided in the file `./examples/AAKdemo.py`. There are four available functions in the module `AAKwrapper`:
+Example Python usage is provided in the file `./examples/AAKdemo.py`. There are four available functions in the module `AAKwrapper`:
 
 - `wave` corresponds to the output of `./bin/AAK_Waveform`
 - `tdi` corresponds to the output of `./bin/AAK_TDI`
 - `phase` corresponds to the output of `./bin/AAK_Phase`
 - `aktdi` corresponds to the output of `./bin/AK_TDI`
+
+### GPU implementation
+
+The AAK waveform has been ported to CUDA. Python interface and native GPU computation of the LISA noise-weighted inner product are also available. Example usage is provided in the file `./examples/pygpuAAKdemo.py`.
 
 ## List of (important) known bugs
 
@@ -75,8 +79,12 @@ Jet Propulsion Laboratory
 `alvin.j.chua@jpl.nasa.gov`
 
 **Jonathan Gair**  
-School of Mathematics, University of Edinburgh  
-`j.gair@ed.ac.uk`
+Max Planck Institute for Gravitational Physics 
+`jonathan.gair@aei.mpg.de`
+
+**Michael Katz**
+Northwestern University
+`michaelkatz2016@u.northwestern.edu`
 
 The EMRI Kludge Suite is also based on code written by Leor Barack (for the AK) and Scott Hughes (for the NK). The TDI executables are based on an approximate derivation/implementation by Stanislav Babak. The Python wrapper for the AAK is provided by Michele Vallisneri.
 
