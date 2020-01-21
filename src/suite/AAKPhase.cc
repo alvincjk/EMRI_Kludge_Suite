@@ -237,6 +237,7 @@ void PNevolutionPhase(double *t, double *e, double *v, double *M, double *S, dou
     gimdot=(dthetadm(v[i],e[i],coslam,S[i])-drdm(v[i],e[i],coslam,S[i]))/dtdm(v[i],e[i],coslam,S[i])/M[i];
     Phidot=drdm(v[i],e[i],coslam,S[i])/dtdm(v[i],e[i],coslam,S[i])/M[i];
     alpdot=(dphidm(v[i],e[i],coslam,S[i])-dthetadm(v[i],e[i],coslam,S[i]))/dtdm(v[i],e[i],coslam,S[i])/M[i];
+    if(Phidot<=0.) Phidot=Phidotm;
     if(i==i0){
       gimdotm=gimdot;
       Phidotm=Phidot;

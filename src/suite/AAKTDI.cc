@@ -318,6 +318,7 @@ void PNevolutionTDI(complex<double> **Xp, complex<double> **Xc, complex<double> 
     	gimdot=(dthetadm(vvec[i],evec[i],clam,Svec[i])-drdm(vvec[i],evec[i],clam,Svec[i]))/dtdm(vvec[i],evec[i],clam,Svec[i])/Mvec[i];
     	Phidot=drdm(vvec[i],evec[i],clam,Svec[i])/dtdm(vvec[i],evec[i],clam,Svec[i])/Mvec[i];
     	alpdot=(dphidm(vvec[i],evec[i],clam,Svec[i])-dthetadm(vvec[i],evec[i],clam,Svec[i]))/dtdm(vvec[i],evec[i],clam,Svec[i])/Mvec[i];
+    	if(Phidot<=0.) Phidot=Phidotm;
     	if(i==i0){
       		gimdotm=gimdot;
       		Phidotm=Phidot;
