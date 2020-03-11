@@ -20,150 +20,128 @@ import numpy
 # else:
 
 
-def cpu_setup():
-    linkArgs = []
+def find_in_path(name, path):
+    """Find a file in a search path"""
 
-    setup(
-        name="AAKwrapper",
-        version="0.1",
-        description="A Python wrapper for AAK",
-        # author = 'Michele Vallisneri',
-        # author_email = 'vallis@vallis.org',
-        packages=["AAKwrapper"],
-        package_dir={"AAKwrapper": "AAKwrapper"},
-        ext_modules=cythonize(
-            Extension(
-                "AAKwrapper.AAKwrapper",
-                ["AAKwrapper/AAKwrapper.pyx"],
-                language="c++",
-                include_dirs=["./include", numpy.get_include()],
-                libraries=[
-                    "gslcblas",
-                    "gsl",
-                    "KS",
-                    "IEKG",
-                    "LB",
-                    "NR",
-                    "RRGW",
-                    "GKG",
-                    "Circ",
-                ],
-                library_dirs=["/usr/local/lib", "./lib"],
-                extra_compile_args=["-Wno-unused-function"],
-                extra_link_args=linkArgs,
+    # Adapted fom http://code.activestate.com/recipes/52224
+    for dir in path.split(os.pathsep):
+        binpath = pjoin(dir, name)
+        if os.path.exists(binpath):
+            return os.path.abspath(binpath)
+    return None
+
+
+def locate_cuda():
+    """Locate the CUDA environment on the system
+
+    Returns a dict with keys 'home', 'nvcc', 'include', and 'lib64'
+    and values giving the absolute path to each directory.
+
+    Starts by looking for the CUDAHOME env variable. If not found,
+    everything is based on finding 'nvcc' in the PATH.
+    """
+
+    # First check if the CUDAHOME env variable is in use
+    if "CUDAHOME" in os.environ:
+        home = os.environ["CUDAHOME"]
+        nvcc = pjoin(home, "bin", "nvcc")
+    else:
+        # Otherwise, search the PATH for NVCC
+        nvcc = find_in_path("nvcc", os.environ["PATH"])
+        if nvcc is None:
+            raise EnvironmentError(
+                "The nvcc binary could not be "
+                "located in your $PATH. Either add it to your path, "
+                "or set $CUDAHOME"
             )
-        ),
-    )
+        home = os.path.dirname(os.path.dirname(nvcc))
+
+    cudaconfig = {
+        "home": home,
+        "nvcc": nvcc,
+        "include": pjoin(home, "include"),
+        "lib64": pjoin(home, "lib64"),
+    }
+    for k, v in iter(cudaconfig.items()):
+        if not os.path.exists(v):
+            raise EnvironmentError(
+                "The CUDA %s path could not be " "located in %s" % (k, v)
+            )
+
+    return cudaconfig
 
 
-def gpu_setup():
-    def find_in_path(name, path):
-        """Find a file in a search path"""
+def customize_compiler_for_nvcc(self):
+    """Inject deep into distutils to customize how the dispatch
+    to gcc/nvcc works.
 
-        # Adapted fom http://code.activestate.com/recipes/52224
-        for dir in path.split(os.pathsep):
-            binpath = pjoin(dir, name)
-            if os.path.exists(binpath):
-                return os.path.abspath(binpath)
-        return None
+    If you subclass UnixCCompiler, it's not trivial to get your subclass
+    injected in, and still have the right customizations (i.e.
+    distutils.sysconfig.customize_compiler) run on it. So instead of going
+    the OO route, I have this. Note, it's kindof like a wierd functional
+    subclassing going on.
+    """
 
-    def locate_cuda():
-        """Locate the CUDA environment on the system
+    # Tell the compiler it can processes .cu
+    self.src_extensions.append(".cu")
 
-        Returns a dict with keys 'home', 'nvcc', 'include', and 'lib64'
-        and values giving the absolute path to each directory.
+    # Save references to the default compiler_so and _comple methods
+    default_compiler_so = self.compiler_so
+    super = self._compile
 
-        Starts by looking for the CUDAHOME env variable. If not found,
-        everything is based on finding 'nvcc' in the PATH.
-        """
-
-        # First check if the CUDAHOME env variable is in use
-        if "CUDAHOME" in os.environ:
-            home = os.environ["CUDAHOME"]
-            nvcc = pjoin(home, "bin", "nvcc")
+    # Now redefine the _compile method. This gets executed for each
+    # object but distutils doesn't have the ability to change compilers
+    # based on source extension: we add it.
+    def _compile(obj, src, ext, cc_args, extra_postargs, pp_opts):
+        if os.path.splitext(src)[1] == ".cu":
+            # use the cuda for .cu files
+            self.set_executable("compiler_so", CUDA["nvcc"])
+            # use only a subset of the extra_postargs, which are 1-1
+            # translated from the extra_compile_args in the Extension class
+            postargs = extra_postargs["nvcc"]
         else:
-            # Otherwise, search the PATH for NVCC
-            nvcc = find_in_path("nvcc", os.environ["PATH"])
-            if nvcc is None:
-                raise EnvironmentError(
-                    "The nvcc binary could not be "
-                    "located in your $PATH. Either add it to your path, "
-                    "or set $CUDAHOME"
-                )
-            home = os.path.dirname(os.path.dirname(nvcc))
+            postargs = extra_postargs["gcc"]
 
-        cudaconfig = {
-            "home": home,
-            "nvcc": nvcc,
-            "include": pjoin(home, "include"),
-            "lib64": pjoin(home, "lib64"),
-        }
-        for k, v in iter(cudaconfig.items()):
-            if not os.path.exists(v):
-                raise EnvironmentError(
-                    "The CUDA %s path could not be " "located in %s" % (k, v)
-                )
+        super(obj, src, ext, cc_args, postargs, pp_opts)
+        # Reset the default compiler_so, which we might have changed for cuda
+        self.compiler_so = default_compiler_so
 
-        return cudaconfig
+    # Inject our redefined _compile method into the class
+    self._compile = _compile
 
-    def customize_compiler_for_nvcc(self):
-        """Inject deep into distutils to customize how the dispatch
-        to gcc/nvcc works.
 
-        If you subclass UnixCCompiler, it's not trivial to get your subclass
-        injected in, and still have the right customizations (i.e.
-        distutils.sysconfig.customize_compiler) run on it. So instead of going
-        the OO route, I have this. Note, it's kindof like a wierd functional
-        subclassing going on.
-        """
+# Run the customize_compiler
+class custom_build_ext(build_ext):
+    def build_extensions(self):
+        customize_compiler_for_nvcc(self.compiler)
+        build_ext.build_extensions(self)
 
-        # Tell the compiler it can processes .cu
-        self.src_extensions.append(".cu")
 
-        # Save references to the default compiler_so and _comple methods
-        default_compiler_so = self.compiler_so
-        super = self._compile
-
-        # Now redefine the _compile method. This gets executed for each
-        # object but distutils doesn't have the ability to change compilers
-        # based on source extension: we add it.
-        def _compile(obj, src, ext, cc_args, extra_postargs, pp_opts):
-            if os.path.splitext(src)[1] == ".cu":
-                # use the cuda for .cu files
-                self.set_executable("compiler_so", CUDA["nvcc"])
-                # use only a subset of the extra_postargs, which are 1-1
-                # translated from the extra_compile_args in the Extension class
-                postargs = extra_postargs["nvcc"]
-            else:
-                postargs = extra_postargs["gcc"]
-
-            super(obj, src, ext, cc_args, postargs, pp_opts)
-            # Reset the default compiler_so, which we might have changed for cuda
-            self.compiler_so = default_compiler_so
-
-        # Inject our redefined _compile method into the class
-        self._compile = _compile
-
-    # Run the customize_compiler
-    class custom_build_ext(build_ext):
-        def build_extensions(self):
-            customize_compiler_for_nvcc(self.compiler)
-            build_ext.build_extensions(self)
-
+try:
     CUDA = locate_cuda()
+    run_cuda = True
 
-    # Obtain the numpy include directory. This logic works across numpy versions.
-    try:
-        numpy_include = numpy.get_include()
-    except AttributeError:
-        numpy_include = numpy.get_numpy_include()
+except OSError:
+    run_cuda = False
 
-    lib_gsl_dir = "/opt/local/lib"
-    include_gsl_dir = "/opt/local/include"
 
-    ext = Extension(
+# Obtain the numpy include directory. This logic works across numpy versions.
+try:
+    numpy_include = numpy.get_include()
+except AttributeError:
+    numpy_include = numpy.get_numpy_include()
+
+lib_gsl_dir = "/opt/local/lib"
+include_gsl_dir = "/opt/local/include"
+
+if run_cuda:
+    gpu_ext = Extension(
         "gpuAAK",
-        sources=["src/suite/gpuAAK.cc", "src/cuda/AAK_manager.cu", "pygpuAAK/GPUAAK.pyx"],
+        sources=[
+            "src/suite/gpuAAK.cc",
+            "src/cuda/AAK_manager.cu",
+            "pygpuAAK/GPUAAK.pyx",
+        ],
         library_dirs=[lib_gsl_dir, CUDA["lib64"], "/usr/local/lib", "./lib"],
         libraries=[
             "cudart",
@@ -207,50 +185,42 @@ def gpu_setup():
         ],
     )
 
-    setup(
-        name="gpuAAK",
-        # Random metadata. there's more you can supply
-        author="Michael Katz",
-        version="0.1",
-        ext_modules=[ext],
-        # Inject our custom trigger
-        cmdclass={"build_ext": custom_build_ext},
-        # Since the package has c code, the egg cannot be zipped
-        zip_safe=False,
-    )
 
+linkArgs = []
 
-def gpu_wrapper_install():
-    setup(
-        name="pygpuAAK",
-        # Random metadata. there's more you can supply
-        author="Michael Katz",
-        version="0.1",
-        packages=["pygpuAAK"],
-        py_modules=["pygpuAAK.pygpuAAK"],
-        # Since the package has c code, the egg cannot be zipped
-        zip_safe=False,
-    )
+cpu_ext = Extension(
+    "AAKwrapper.AAKwrapper",
+    ["AAKwrapper/AAKwrapper.pyx"],
+    language="c++",
+    include_dirs=["./include", numpy.get_include()],
+    libraries=["gslcblas", "gsl", "KS", "IEKG", "LB", "NR", "RRGW", "GKG", "Circ",],
+    library_dirs=["/usr/local/lib", "./lib"],
+    extra_compile_args={"gcc": ["-Wno-unused-function"]},
+    extra_link_args=linkArgs,
+)
 
+if run_cuda:
+    extensions = [gpu_ext, cpu_ext]
+    packages = ["AAKwrapper", "pygpuAAK"]
+    package_dir = {"AAKwrapper": "AAKwrapper", "pygpuAAK": "pygpuAAK"}
+    py_modules = ["pygpuAAK.pygpuAAK", "pygpuAAK.convert"]
 
-print_strings = []
-try:
-    print_strings.append("ATTEMPTED CUDA INSTALL")
-    gpu_setup()
-    print_strings.append("INSTALLED FOR CUDA: gpuAAK")
-    gpu_wrapper_install()
-    print_strings.append("INSTALLED WRAPPER FOR CUDA: pygpuAAK")
-except OSError:
-    print_strings.append(
-        "COULD NOT FIND CUDA ON PATH."
-        + "The nvcc binary could not be located in your $PATH. "
-        + "Either add it to your path, or set $CUDAHOME"
-    )
+else:
+    extensions = [cpu_ext]
+    packages = ["AAKwrapper"]
+    package_dir = {"AAKwrapper": "AAKwrapper"}
+    py_modules = []
 
-
-cpu_setup()
-print_strings.append("INSTALLED C++ VERSION: AAK")
-
-print("\n")
-for string in print_strings:
-    print(string)
+setup(
+    name="AAKwrapper",
+    version="0.1",
+    description="A Python wrapper for AAK",
+    # author = 'Michele Vallisneri',
+    # author_email = 'vallis@vallis.org',
+    packages=packages,
+    package_dir=package_dir,
+    py_modules=py_modules,
+    ext_modules=cythonize(extensions),
+    cmdclass={"build_ext": custom_build_ext},
+    zip_safe=False,
+)
