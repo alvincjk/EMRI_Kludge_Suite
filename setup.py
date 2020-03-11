@@ -139,6 +139,8 @@ if run_cuda:
         "gpuAAK",
         sources=[
             "src/suite/gpuAAK.cc",
+            "src/cuda/kernel.cu",
+            "src/cuda/interpolate.cu",
             "src/cuda/AAK_manager.cu",
             "pygpuAAK/GPUAAK.pyx",
         ],

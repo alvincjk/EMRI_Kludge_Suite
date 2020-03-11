@@ -38,7 +38,11 @@ public:
 
 void destroyInterpArrayContainer(InterpArrayContainer *array_container, int num_arr);
 
-InterpArrayContainer * createInterpArrayContainer(int num_arr, int num_points);
+InterpArrayContainer * createInterpArrayContainer(size_t *numBytes, int num_arr, int num_points);
+
+InterpArrayContainer * createInterpArrayContainer_gpu(size_t numBytes, InterpArrayContainer *cpu_array_container);
+
+void destroyInterpArrayContainer(InterpArrayContainer * gpu_array_container, InterpArrayContainer *cpu_array_container, int num_arr);
 
 __global__
 void set_spline_constants(InterpArrayContainer *arr_container, double *B, int length_per_arr, int num_arr);

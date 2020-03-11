@@ -7,7 +7,7 @@ you perform actions with the GPU
 This class will get translated into python via swig
 */
 
-#include <kernel.cu>
+#include <kernel.hh>
 #include <AAK_manager.hh>
 #include <assert.h>
 #include <iostream>
@@ -22,7 +22,7 @@ This class will get translated into python via swig
 #include "KSParMap.h"
 #include "KSTools.h"
 #include "gpuAAK.h"
-#include "interpolate.cu"
+#include "interpolate.hh"
 
 using namespace std;
 

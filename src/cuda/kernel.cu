@@ -4,6 +4,7 @@
 #include <cuComplex.h>
 #include "interpolate.hh"
 #include "Globals.h"
+#include "kernel.hh"
 
 #define NUM_BANKS 16
 #define LOG_NUM_BANKS 4
