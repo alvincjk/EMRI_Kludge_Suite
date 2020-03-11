@@ -17,29 +17,43 @@ import numpy
 # maybe need rpath links to shared libraries on Linux
 # if platform.system() == 'Linux':
 #    linkArgs = ['-Wl,-R{}/lib'.format(...)]
-#else:
+# else:
+
 
 def cpu_setup():
     linkArgs = []
 
-    setup(name = 'AAKwrapper',
-          version = '0.1',
-          description = 'A Python wrapper for AAK',
-
-          # author = 'Michele Vallisneri',
-          # author_email = 'vallis@vallis.org',
-
-          packages = ['AAKwrapper'],
-          package_dir = {'AAKwrapper': 'AAKwrapper'},
-
-          ext_modules = cythonize(Extension('AAKwrapper.AAKwrapper',['AAKwrapper/AAKwrapper.pyx'],
-                                            language = "c++",
-                                            include_dirs = ['./include', numpy.get_include()],
-                                            libraries = ['gslcblas', 'gsl', 'KS', 'IEKG', 'LB', 'NR', 'RRGW', 'GKG', 'Circ'],
-                                            library_dirs = ['/usr/local/lib', './lib'],
-                                            extra_compile_args = ["-Wno-unused-function"],
-                                            extra_link_args = linkArgs))
-                                  )
+    setup(
+        name="AAKwrapper",
+        version="0.1",
+        description="A Python wrapper for AAK",
+        # author = 'Michele Vallisneri',
+        # author_email = 'vallis@vallis.org',
+        packages=["AAKwrapper"],
+        package_dir={"AAKwrapper": "AAKwrapper"},
+        ext_modules=cythonize(
+            Extension(
+                "AAKwrapper.AAKwrapper",
+                ["AAKwrapper/AAKwrapper.pyx"],
+                language="c++",
+                include_dirs=["./include", numpy.get_include()],
+                libraries=[
+                    "gslcblas",
+                    "gsl",
+                    "KS",
+                    "IEKG",
+                    "LB",
+                    "NR",
+                    "RRGW",
+                    "GKG",
+                    "Circ",
+                ],
+                library_dirs=["/usr/local/lib", "./lib"],
+                extra_compile_args=["-Wno-unused-function"],
+                extra_link_args=linkArgs,
+            )
+        ),
+    )
 
 
 def gpu_setup():
@@ -53,7 +67,6 @@ def gpu_setup():
                 return os.path.abspath(binpath)
         return None
 
-
     def locate_cuda():
         """Locate the CUDA environment on the system
 
@@ -65,28 +78,33 @@ def gpu_setup():
         """
 
         # First check if the CUDAHOME env variable is in use
-        if 'CUDAHOME' in os.environ:
-            home = os.environ['CUDAHOME']
-            nvcc = pjoin(home, 'bin', 'nvcc')
+        if "CUDAHOME" in os.environ:
+            home = os.environ["CUDAHOME"]
+            nvcc = pjoin(home, "bin", "nvcc")
         else:
             # Otherwise, search the PATH for NVCC
-            nvcc = find_in_path('nvcc', os.environ['PATH'])
+            nvcc = find_in_path("nvcc", os.environ["PATH"])
             if nvcc is None:
-                raise EnvironmentError('The nvcc binary could not be '
-                    'located in your $PATH. Either add it to your path, '
-                    'or set $CUDAHOME')
+                raise EnvironmentError(
+                    "The nvcc binary could not be "
+                    "located in your $PATH. Either add it to your path, "
+                    "or set $CUDAHOME"
+                )
             home = os.path.dirname(os.path.dirname(nvcc))
 
-        cudaconfig = {'home': home, 'nvcc': nvcc,
-                      'include': pjoin(home, 'include'),
-                      'lib64': pjoin(home, 'lib64')}
+        cudaconfig = {
+            "home": home,
+            "nvcc": nvcc,
+            "include": pjoin(home, "include"),
+            "lib64": pjoin(home, "lib64"),
+        }
         for k, v in iter(cudaconfig.items()):
             if not os.path.exists(v):
-                raise EnvironmentError('The CUDA %s path could not be '
-                                       'located in %s' % (k, v))
+                raise EnvironmentError(
+                    "The CUDA %s path could not be " "located in %s" % (k, v)
+                )
 
         return cudaconfig
-
 
     def customize_compiler_for_nvcc(self):
         """Inject deep into distutils to customize how the dispatch
@@ -100,7 +118,7 @@ def gpu_setup():
         """
 
         # Tell the compiler it can processes .cu
-        self.src_extensions.append('.cu')
+        self.src_extensions.append(".cu")
 
         # Save references to the default compiler_so and _comple methods
         default_compiler_so = self.compiler_so
@@ -110,14 +128,14 @@ def gpu_setup():
         # object but distutils doesn't have the ability to change compilers
         # based on source extension: we add it.
         def _compile(obj, src, ext, cc_args, extra_postargs, pp_opts):
-            if os.path.splitext(src)[1] == '.cu':
+            if os.path.splitext(src)[1] == ".cu":
                 # use the cuda for .cu files
-                self.set_executable('compiler_so', CUDA['nvcc'])
+                self.set_executable("compiler_so", CUDA["nvcc"])
                 # use only a subset of the extra_postargs, which are 1-1
                 # translated from the extra_compile_args in the Extension class
-                postargs = extra_postargs['nvcc']
+                postargs = extra_postargs["nvcc"]
             else:
-                postargs = extra_postargs['gcc']
+                postargs = extra_postargs["gcc"]
 
             super(obj, src, ext, cc_args, postargs, pp_opts)
             # Reset the default compiler_so, which we might have changed for cuda
@@ -126,15 +144,11 @@ def gpu_setup():
         # Inject our redefined _compile method into the class
         self._compile = _compile
 
-
-
     # Run the customize_compiler
     class custom_build_ext(build_ext):
         def build_extensions(self):
             customize_compiler_for_nvcc(self.compiler)
             build_ext.build_extensions(self)
-
-
 
     CUDA = locate_cuda()
 
@@ -147,69 +161,96 @@ def gpu_setup():
     lib_gsl_dir = "/opt/local/lib"
     include_gsl_dir = "/opt/local/include"
 
-    ext = Extension('gpuAAK',
-            sources = ['src/suite/AAK.cc', 'src/cuda/AAK_manager.cu', 'pygpuAAK/GPUAAK.pyx'],
-            library_dirs = [lib_gsl_dir, CUDA['lib64'], '/usr/local/lib', './lib'],
-            libraries = ['cudart', "cublas", "cusparse", "cufft", "gsl", "gslcblas", 'KS', 'IEKG', 'LB', 'NR', 'RRGW', 'GKG', 'Circ'],
-            language = 'c++',
-            runtime_library_dirs = [CUDA['lib64']],
-            # This syntax is specific to this build system
-            # we're only going to use certain compiler args with nvcc
-            # and not with gcc the implementation of this trick is in
-            # customize_compiler()
-            extra_compile_args= {
-                'gcc': ['-std=c99', "-Wno-unused-function"],  # , "-g"]
-                'nvcc': [
-                    '-arch=sm_70', '--ptxas-options=-v', '-c',
-                    '--compiler-options', "'-fPIC'"]#,"-G", "-g"] # for debugging
-                },
-                include_dirs = [numpy_include, include_gsl_dir, CUDA['include'], './include', './src', './src/suite', './src/cuda']
-            )
+    ext = Extension(
+        "gpuAAK",
+        sources=["src/suite/gpuAAK.cc", "src/cuda/AAK_manager.cu", "pygpuAAK/GPUAAK.pyx"],
+        library_dirs=[lib_gsl_dir, CUDA["lib64"], "/usr/local/lib", "./lib"],
+        libraries=[
+            "cudart",
+            "cublas",
+            "cusparse",
+            "cufft",
+            "gsl",
+            "gslcblas",
+            "KS",
+            "IEKG",
+            "LB",
+            "NR",
+            "RRGW",
+            "GKG",
+            "Circ",
+        ],
+        language="c++",
+        runtime_library_dirs=[CUDA["lib64"]],
+        # This syntax is specific to this build system
+        # we're only going to use certain compiler args with nvcc
+        # and not with gcc the implementation of this trick is in
+        # customize_compiler()
+        extra_compile_args={
+            "gcc": ["-std=c99", "-Wno-unused-function"],  # , "-g"]
+            "nvcc": [
+                "-arch=sm_70",
+                "--ptxas-options=-v",
+                "-c",
+                "--compiler-options",
+                "'-fPIC'",
+            ],  # ,"-G", "-g"] # for debugging
+        },
+        include_dirs=[
+            numpy_include,
+            include_gsl_dir,
+            CUDA["include"],
+            "./include",
+            "./src",
+            "./src/suite",
+            "./src/cuda",
+        ],
+    )
 
-
-
-    setup(name = 'gpuAAK',
-          # Random metadata. there's more you can supply
-          author = 'Michael Katz',
-          version = '0.1',
-
-          ext_modules = [ext],
-
-          # Inject our custom trigger
-          cmdclass = {'build_ext': custom_build_ext},
-
-          # Since the package has c code, the egg cannot be zipped
-          zip_safe = False)
+    setup(
+        name="gpuAAK",
+        # Random metadata. there's more you can supply
+        author="Michael Katz",
+        version="0.1",
+        ext_modules=[ext],
+        # Inject our custom trigger
+        cmdclass={"build_ext": custom_build_ext},
+        # Since the package has c code, the egg cannot be zipped
+        zip_safe=False,
+    )
 
 
 def gpu_wrapper_install():
-    setup(name = 'pygpuAAK',
-          # Random metadata. there's more you can supply
-          author = 'Michael Katz',
-          version = '0.1',
-          packages=['pygpuAAK'],
-           py_modules=['pygpuAAK.pygpuAAK'],
-
-          # Since the package has c code, the egg cannot be zipped
-          zip_safe = False)
+    setup(
+        name="pygpuAAK",
+        # Random metadata. there's more you can supply
+        author="Michael Katz",
+        version="0.1",
+        packages=["pygpuAAK"],
+        py_modules=["pygpuAAK.pygpuAAK"],
+        # Since the package has c code, the egg cannot be zipped
+        zip_safe=False,
+    )
 
 
 print_strings = []
 try:
-    print_strings.append('ATTEMPTED CUDA INSTALL')
+    print_strings.append("ATTEMPTED CUDA INSTALL")
     gpu_setup()
-    print_strings.append('INSTALLED FOR CUDA: gpuAAK')
+    print_strings.append("INSTALLED FOR CUDA: gpuAAK")
     gpu_wrapper_install()
-    print_strings.append('INSTALLED WRAPPER FOR CUDA: pygpuAAK')
+    print_strings.append("INSTALLED WRAPPER FOR CUDA: pygpuAAK")
 except OSError:
-    print_strings.append('COULD NOT FIND CUDA ON PATH.'
-                         + 'The nvcc binary could not be located in your $PATH. '
-                         + 'Either add it to your path, or set $CUDAHOME')
+    print_strings.append(
+        "COULD NOT FIND CUDA ON PATH."
+        + "The nvcc binary could not be located in your $PATH. "
+        + "Either add it to your path, or set $CUDAHOME"
+    )
 
 
 cpu_setup()
-print_strings.append('INSTALLED C++ VERSION: AAK')
+print_strings.append("INSTALLED C++ VERSION: AAK")
 
-print('\n')
+print("\n")
 for string in print_strings:
     print(string)

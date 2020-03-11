@@ -1,7 +1,7 @@
 #ifndef __MANAGER_H__
 #define __MANAGER_H__
 
-#include "AAK.h"
+#include "gpuAAK.h"
 #include "Globals.h"
 #include <stdlib.h>
 #include "cuComplex.h"
@@ -42,11 +42,6 @@ class GPUAAK {
   double *vvec;
   double *Mvec;
   double *Svec;
-  double *gimvec;
-  double *Phivec;
-  double *alpvec;
-  double *nuvec;
-  double *gimdotvec;
 
   double *d_tvec;
   InterpArrayContainer *d_trajectories;
@@ -56,13 +51,12 @@ class GPUAAK {
   InterpArrayContainer d_vvec;
   InterpArrayContainer d_Mvec;
   InterpArrayContainer d_Svec;
-  InterpArrayContainer d_gimvec;
-  InterpArrayContainer d_Phivec;
-  InterpArrayContainer d_alpvec;
-  InterpArrayContainer d_nuvec;
-  InterpArrayContainer d_gimdotvec;
 
   Interpolate interp;
+
+  double interp_timestep;
+  double t_clip;
+  int temp_length;
 
   double iota;
   double s;
@@ -78,6 +72,8 @@ class GPUAAK {
   double theta_K;
   double phi_K;
   double D;
+
+  double *e_out, *v_out, *M_out, *S_out, *gimdot_out, *nu_out, *alpdot_out, *gim_out, *Phi_out, *alp_out;
 
   int NUM_THREADS;
   int num_blocks;
