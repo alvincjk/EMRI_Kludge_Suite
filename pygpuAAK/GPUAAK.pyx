@@ -69,8 +69,8 @@ cdef class GPUAAK:
         cdef np.ndarray[ndim=1, dtype=np.float64_t] hI_ = np.zeros(self.length+2, dtype=np.float64)
         cdef np.ndarray[ndim=1, dtype=np.float64_t] hII_ = np.zeros(self.length+2, dtype=np.float64)
 
-        hI_f = np.zeros(int(1./2.*(self.length+2)), dtype=np.complex128)
-        hII_f = np.zeros(int(1./2.*(self.length+2)), dtype=np.complex128)
+        hI_f = np.zeros(int(1./2.*(self.length)+1), dtype=np.complex128)
+        hII_f = np.zeros(int(1./2.*(self.length)+1), dtype=np.complex128)
 
         self.g.GetWaveform(&t_[0], &hI_[0], &hII_[0])
 

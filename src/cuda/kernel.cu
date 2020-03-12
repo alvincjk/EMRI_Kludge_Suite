@@ -406,8 +406,6 @@ void kernel_create_waveform(double *t, double *hI, double *hII,
   double t_plunge=i_plunge*timestep;
   double t_zero=t_plunge+timestep*i_buffer;
 
-  if (i == 7194305) printf("%e\n", hI[7194305]);
-
   if (time <=t_zero){
 
     hI[i]=0.;
@@ -448,9 +446,11 @@ void kernel_create_waveform(double *t, double *hI, double *hII,
 
     double orbphs,cosorbphs,sinorbphs,FplusI,FcrosI,FplusII,FcrosII;
     if(mich){
+
       orbphs=2.*M_PI*t[i]/year;
       cosorbphs=cos(orbphs-phiS);
       sinorbphs=sin(orbphs-phiS);
+
       double cosq=.5*cosqS-halfsqrt3*sinqS*cosorbphs;
       double phiw=orbphs+atan2(halfsqrt3*cosqS+.5*sinqS*cosorbphs,sinqS*sinorbphs);
       double psiup=.5*cosqK-halfsqrt3*sinqK*cos(orbphs-phiK)-cosq*(cosqK*cosqS+sinqK*sinqS*cos(phiK-phiS));
@@ -461,10 +461,12 @@ void kernel_create_waveform(double *t, double *hI, double *hII,
       double sin2phi=sin(2.*phiw);
       double cos2psi=cos(2.*psi);
       double sin2psi=sin(2.*psi);
+
       FplusI=cosq1*cos2phi*cos2psi-cosq*sin2phi*sin2psi;
       FcrosI=cosq1*cos2phi*sin2psi+cosq*sin2phi*cos2psi;
       FplusII=cosq1*sin2phi*cos2psi+cosq*cos2phi*sin2psi;
       FcrosII=cosq1*sin2phi*sin2psi-cosq*cos2phi*cos2psi;
+      if (i == 1000) printf("%d %e %e %e %e \n", i, FplusI, FplusII, FcrosI, FcrosII);
     }
     else{
       FplusI=1.;
@@ -474,6 +476,7 @@ void kernel_create_waveform(double *t, double *hI, double *hII,
     }
 
     double Amp=pow(d_OmegaPhi(v,e,coslam,S,M)*M_phys*SOLARMASSINSEC,2./3.)*zeta;
+
     // TODO: check making num modes to gridDim (then need to do reduction to get singular waveform)
     double fn,Doppler,nPhi;
     double ne, a, b, c, Aplus, Acros, Aplusold, Acrosold;
@@ -548,7 +551,6 @@ void kernel_create_waveform(double *t, double *hI, double *hII,
   if (i == 1000)
       printf("%d, %.18e, %.18e\n", i, hI[i], hII[i]);
   #endif //*/
-if (i == 7194305) printf("%e\n", hI[7194305]);
 
 }
 

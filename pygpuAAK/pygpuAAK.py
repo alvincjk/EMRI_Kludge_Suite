@@ -243,8 +243,8 @@ class pyGPUAAK:
             dtype = np.complex128
             is_Fourier = True
 
-            hI = np.zeros((len(iota), self.fft_length * factor), dtype=dtype)
-            hII = np.zeros((len(iota), self.fft_length * factor), dtype=dtype)
+            hI = np.zeros((len(iota), self.fft_length), dtype=dtype)
+            hII = np.zeros((len(iota), self.fft_length), dtype=dtype)
 
         if return_waveform:
             factor = 2

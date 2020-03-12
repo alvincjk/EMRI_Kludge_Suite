@@ -241,13 +241,14 @@ void GPUAAK::gpu_gen_AAK(
     cumsum(alp_out, alph, run_num);
 
     /* main: evaluate model at given frequencies */
-    kernel_create_waveform<<<num_blocks_wave, NUM_THREADS>>>(d_t, d_hI, d_hII, d_tvec, e_out, v_out, M_out, S_out, gim_out, Phi_out, alp_out, nu_out, gimdot_out, iota, theta_S, phi_S, theta_K, phi_K, LISA, init_length, length+2, nmodes, i_plunge, i_buffer, zeta, M, init_dt, dt, run_num);  //iota = lam
+    kernel_create_waveform<<<num_blocks_wave, NUM_THREADS>>>(d_t, d_hI, d_hII, d_tvec, e_out, v_out, M_out, S_out, gim_out, Phi_out, alp_out, nu_out, gimdot_out, iota, M_PI - theta_S, phi_S, theta_K, phi_K, LISA, init_length, length+2, nmodes, i_plunge, i_buffer, zeta, M, init_dt, dt, run_num);  //iota = lam
 
-    printit<<<1,1>>>(d_hI, 10);
     cudaDeviceSynchronize();
     gpuErrchk(cudaGetLastError());
+
+    /*printit<<<1,1>>>(d_hI, 10);
     cudaDeviceSynchronize();
-    gpuErrchk(cudaGetLastError());
+    gpuErrchk(cudaGetLastError());*/
          /*double *hI = new double[length+2];
      cudaMemcpy(hI, d_data_channel1, (length+2)*sizeof(double), cudaMemcpyDeviceToHost);
      for (int i=0; i<200; i+=1){

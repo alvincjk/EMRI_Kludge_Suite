@@ -51,11 +51,11 @@ def LISA_Noise(f, L=2.5e9, f_star=19.09e-3, dur=4):
 def test():
     iota = 0.5
     s = 0.9697
-    p = 10.0
+    p = 7.0
     e = 0.22865665220266215
     T_fit = 1.0
     init_length = 100000
-    length = 4194305
+    length = 4194304
     init_dt = 100.0
     dt = 15.0
     M = 1134944.869275098
@@ -63,8 +63,8 @@ def test():
     gamma = 0.0
     psi = 0.0
     alph = 1.1
-    theta_S = 1.05
-    phi_S = 0.0
+    theta_S = np.pi - 0.49894448924039203
+    phi_S = 2.23279697592
     theta_K = 0.8
     phi_K = 0.8
     D = 1.8
@@ -74,7 +74,7 @@ def test():
     pars = {
         "backint": backint,
         "LISA": LISA,
-        "length": length,
+        "length": length + 2,
         "dt": dt,
         "p": p,
         "T": T_fit,
@@ -114,14 +114,14 @@ def test():
 
     print("Running cpu waveform.")
     st = time.perf_counter()
-    # tc, hIc, hIIc, timing = cpu_AAK.wave(pars)
-    tc = np.arange(0.0, length * dt)
-    hIc = np.zeros_like(tc)
-    hIIc = np.zeros_like(tc)
+    tc, hIc, hIIc, timing = cpu_AAK.wave(pars)
+    # tc = np.arange(0.0, length * dt)
+    # hIc = np.zeros_like(tc)
+    # hIIc = np.zeros_like(tc)
     et = time.perf_counter()
     print("CPU Waveform complete: {} seconds".format(et - st))
 
-    pad = 3000000
+    pad = 0
     hIc = np.pad(hIc, (0, pad), "constant")
     hIIc = np.pad(hIIc, (0, pad), "constant")
     hI_f, hII_f = np.fft.rfft(hIc), np.fft.rfft(hIIc)
@@ -133,7 +133,7 @@ def test():
     ASD = np.sqrt(LISA_Noise(freqs, dur=4))
     noise_channels = {"channel1": ASD ** 2, "channel2": ASD ** 2}
 
-    kwargs = {"T_fit": 1.0, "LISA": False, "backint": True}
+    kwargs = {"T_fit": 1.0, "LISA": True, "backint": True}
 
     like_class = pygpuAAK.pyGPUAAK(
         data_stream, noise_channels, length + pad, dt, init_dt, key_order, **kwargs
