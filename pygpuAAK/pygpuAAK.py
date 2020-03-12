@@ -215,6 +215,7 @@ class pyGPUAAK:
         D,
         return_snr=False,
         return_TDI=False,
+        return_waveform=False,
         **kwargs,
     ):
 
@@ -238,8 +239,20 @@ class pyGPUAAK:
         d_h, h_h = np.zeros_like(iota), np.zeros_like(iota)
 
         if return_TDI:
-            hI = np.zeros((len(iota), self.fft_length), dtype=np.complex128)
-            hII = np.zeros((len(iota), self.fft_length), dtype=np.complex128)
+            factor = 1
+            dtype = np.complex128
+            is_Fourier = True
+
+            hI = np.zeros((len(iota), self.fft_length * factor), dtype=dtype)
+            hII = np.zeros((len(iota), self.fft_length * factor), dtype=dtype)
+
+        if return_waveform:
+            factor = 2
+            dtype = np.float64
+            is_Fourier = False
+
+            hI = np.zeros((len(iota), self.length + 2), dtype=dtype)
+            hII = np.zeros((len(iota), self.length + 2), dtype=dtype)
 
         for i in range(len(iota)):
             d_h[i], h_h[i] = self.generator.WaveformThroughLikelihood(
@@ -257,12 +270,13 @@ class pyGPUAAK:
                 theta_K[i],
                 phi_K[i],
                 D[i],
+                return_waveform=return_waveform,
             )
 
-            if return_TDI:
-                _, hI[i], hII[i] = self.generator.GetWaveform(is_Fourier=True)
+            if return_TDI or return_waveform:
+                _, hI[i], hII[i] = self.generator.GetWaveform(is_Fourier=is_Fourier)
 
-        if return_TDI:
+        if return_TDI or return_waveform:
             return hI, hII
 
         if return_snr:

@@ -145,7 +145,8 @@ GPUAAK::GPUAAK (double T_fit_,
 
 __global__ void printit(double *arr, int n)
 {
-    for (int i=0; i<n; i++) printf("%.10e\n", arr[i]);
+    for (int i=7194300; i<7194305+2; i++)
+    printf("%d %.10e\n", i, arr[i]);
 
 }
 
@@ -239,18 +240,14 @@ void GPUAAK::gpu_gen_AAK(
     cumsum(Phi_out, psi, run_num);
     cumsum(alp_out, alph, run_num);
 
-    /*printit<<<1,1>>>(gim_out, run_num);
-    cudaDeviceSynchronize();
-    gpuErrchk(cudaGetLastError());*/
-
     /* main: evaluate model at given frequencies */
-    kernel_create_waveform<<<num_blocks_wave, NUM_THREADS>>>(d_t, d_hI, d_hII, d_tvec, e_out, v_out, M_out, S_out, gim_out, Phi_out, alp_out, nu_out, gimdot_out, iota, theta_S, phi_S, theta_K, phi_K, LISA, init_length, length, nmodes, i_plunge, i_buffer, zeta, M, init_dt, dt, run_num);  //iota = lam
+    kernel_create_waveform<<<num_blocks_wave, NUM_THREADS>>>(d_t, d_hI, d_hII, d_tvec, e_out, v_out, M_out, S_out, gim_out, Phi_out, alp_out, nu_out, gimdot_out, iota, theta_S, phi_S, theta_K, phi_K, LISA, init_length, length+2, nmodes, i_plunge, i_buffer, zeta, M, init_dt, dt, run_num);  //iota = lam
 
+    printit<<<1,1>>>(d_hI, 10);
     cudaDeviceSynchronize();
     gpuErrchk(cudaGetLastError());
-
-
-
+    cudaDeviceSynchronize();
+    gpuErrchk(cudaGetLastError());
          /*double *hI = new double[length+2];
      cudaMemcpy(hI, d_data_channel1, (length+2)*sizeof(double), cudaMemcpyDeviceToHost);
      for (int i=0; i<200; i+=1){

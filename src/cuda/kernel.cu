@@ -293,6 +293,13 @@ void produce_phasing(double *e_out, double *v_out, double *M_out, double *S_out,
 
 }
 
+__global__ void prescan0(double *arr, double arr0, double *temp)
+{
+    *arr = arr0;
+    *temp = 0.0;
+}
+
+
 
 __global__ void prescan1(double *g_idata, int n, double *temp, int num_sum_per_thread)
 {
@@ -303,13 +310,11 @@ __global__ void prescan1(double *g_idata, int n, double *temp, int num_sum_per_t
 
     for(int i=start_ind; i<end_ind; i++) g_idata[i+1]+=g_idata[i];
     int temp_ind = start_ind / num_sum_per_thread + 1;
-    if (temp_ind == 0) temp[0] == 0.0;
-    else temp[temp_ind] = g_idata[end_ind];
+    temp[temp_ind] = g_idata[end_ind];
 }
 
-__global__ void prescan2(int n, double *temp, double phase0, int num_sum_per_thread)
+__global__ void prescan2(int n, double *temp, int num_sum_per_thread)
 {
-    temp[0] = phase0;
     for(int i=0; i<n-1; i++) temp[i+1] += temp[i];
 }
 
@@ -343,11 +348,15 @@ void cumsum(double *data, double phase0, int n){
     gpuErrchk_kern(cudaMalloc(&temp, (num_needed_threads+1)*sizeof(double)));
 
 
+    prescan0<<<1,1>>>(data, phase0, temp);
+    cudaDeviceSynchronize();
+    gpuErrchk_kern(cudaGetLastError());
+
     prescan1<<<num_blocks_prescan1, NUM_THREADS>>>(data, n, temp, num_sum_per_thread);
     cudaDeviceSynchronize();
     gpuErrchk_kern(cudaGetLastError());
 
-    prescan2<<<1,1>>>(num_needed_threads+1, temp, phase0, num_sum_per_thread);
+    prescan2<<<1,1>>>(num_needed_threads+1, temp, num_sum_per_thread);
     cudaDeviceSynchronize();
     gpuErrchk_kern(cudaGetLastError());
 
@@ -372,6 +381,7 @@ void kernel_create_waveform(double *t, double *hI, double *hII,
                             double init_dt, double timestep, int run_length){
 
     int i = blockIdx.x * blockDim.x + threadIdx.x;
+
     if (i >= vlength) return;
     if (i >= run_length) {
         hI[i] = 0.0;
@@ -393,8 +403,11 @@ void kernel_create_waveform(double *t, double *hI, double *hII,
   //for(int i=0;i<vlength;i++){
   double time = timestep*i;
   t[i]= time;
-  double t_plunge=tvec[i_plunge];
+  double t_plunge=i_plunge*timestep;
   double t_zero=t_plunge+timestep*i_buffer;
+
+  if (i == 7194305) printf("%e\n", hI[7194305]);
+
   if (time <=t_zero){
 
     hI[i]=0.;
@@ -535,6 +548,7 @@ void kernel_create_waveform(double *t, double *hI, double *hII,
   if (i == 1000)
       printf("%d, %.18e, %.18e\n", i, hI[i], hII[i]);
   #endif //*/
+if (i == 7194305) printf("%e\n", hI[7194305]);
 
 }
 

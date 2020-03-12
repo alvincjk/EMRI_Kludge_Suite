@@ -50,16 +50,16 @@ def LISA_Noise(f, L=2.5e9, f_star=19.09e-3, dur=4):
 
 def test():
     iota = 0.5
-    s = 0.5
-    p = 7.0
-    e = 0.7
+    s = 0.9697
+    p = 10.0
+    e = 0.22865665220266215
     T_fit = 1.0
     init_length = 100000
-    length = 2000000
+    length = 4194305
     init_dt = 100.0
-    dt = 10.0
-    M = 1e6
-    mu = 10.0
+    dt = 15.0
+    M = 1134944.869275098
+    mu = 29.489999547765798
     gamma = 0.0
     psi = 0.0
     alph = 1.1
@@ -114,7 +114,10 @@ def test():
 
     print("Running cpu waveform.")
     st = time.perf_counter()
-    tc, hIc, hIIc, timing = cpu_AAK.wave(pars)
+    # tc, hIc, hIIc, timing = cpu_AAK.wave(pars)
+    tc = np.arange(0.0, length * dt)
+    hIc = np.zeros_like(tc)
+    hIIc = np.zeros_like(tc)
     et = time.perf_counter()
     print("CPU Waveform complete: {} seconds".format(et - st))
 
@@ -130,7 +133,7 @@ def test():
     ASD = np.sqrt(LISA_Noise(freqs, dur=4))
     noise_channels = {"channel1": ASD ** 2, "channel2": ASD ** 2}
 
-    kwargs = {"T_fit": 1.0, "LISA": True, "backint": True}
+    kwargs = {"T_fit": 1.0, "LISA": False, "backint": True}
 
     like_class = pygpuAAK.pyGPUAAK(
         data_stream, noise_channels, length + pad, dt, init_dt, key_order, **kwargs
@@ -158,7 +161,11 @@ def test():
     ).T
 
     likelihood = like_class.getNLL(x)
-    num = 1000
+    hI, hII = like_class.getNLL(x, return_waveform=True)
+    import pdb
+
+    pdb.set_trace()
+    num = 1
     st = time.perf_counter()
     for i in range(num):
         likelihood = like_class.getNLL(x)
@@ -172,7 +179,9 @@ def test():
 
     snr = like_class.getNLL(x, return_snr=True)
     fisher = like_class.get_Fisher(x.T[0])
+    import pdb
 
+    pdb.set_trace()
     print("SNR: ", snr, "Likelihood:", likelihood)
 
 

@@ -264,6 +264,8 @@ void PNevolution(double *t_in, double *e_in, double *v_in, double *M_in, double 
 
   *init_length = j_end - j0 + 1;
 
+  *i_plunge = *i_plunge - i0;
+
   //printf("%e %d %d %d %e %e %e\n", *t_find_plunge, *i_plunge, i0, *i_buffer, timestep, *interp_timestep, *t_clip);
 
   free(t_find_plunge);

@@ -7,8 +7,8 @@ cdef extern from "AAK_manager.hh":
     cdef cppclass GPUAAKwrap "GPUAAK":
         GPUAAKwrap(double, int, int,
         double, double,
-        bool,
-        bool,
+        int,
+        int,
         np.complex128_t*, np.complex128_t*, np.float64_t*, np.float64_t*)
 
         void run_phase_trajectory(
@@ -90,8 +90,9 @@ cdef class GPUAAK:
         return like_
 
     def WaveformThroughLikelihood(self, iota, s, p, e, M, mu, gamma, psi, alph, theta_S,
-                        phi_S, theta_K, phi_K, D):
+                        phi_S, theta_K, phi_K, D, return_waveform=True):
         self.gpu_gen_AAK(iota, s, p, e, M, mu, gamma, psi, alph, theta_S,
                             phi_S, theta_K, phi_K, D)
+        if return_waveform == True:
+            return (0.0, 0.0)
         return self.Likelihood()
-        
