@@ -109,11 +109,9 @@ public:
        double init_dt_,
        double dt_,
        bool LISA_,
-       bool backint_,
-       cmplx *data_channel1_,
-       cmplx *data_channel2_,
-       double *noise_channel1_inv_,
-       double *noise_channel2_inv_); // constructor (copies to GPU)
+       bool backint_); // constructor (copies to GPU)
+
+void input_data(cmplx *hI_f_, cmplx *hII_f_, double *channel_ASDinv1_, double *channel_ASDinv2_, int len);
 
   ~GPUAAK(); // destructor
 

@@ -184,7 +184,7 @@ void PNevolution(double *t_in, double *e_in, double *v_in, double *M_in, double 
     j_start=j0+floor((t_end-vlength*timestep)/dt_large);
 
     //printf("%d %d %d %e %e %e, %e, %e\n", j_end, j_start, j0, t_end, v_AK[j0], e_AK[j0], e_AK[j0+1], e_AK[j0-1]);
-    for(int j=j0;j>j_start;j--){
+    /*for(int j=j0;j>j_start;j--){
       edotp=edot;
       vdotp=vdot;
       edot=dedt(v_AK[j],e_AK[j],coslam,mu,M0,S0);
@@ -209,7 +209,7 @@ void PNevolution(double *t_in, double *e_in, double *v_in, double *M_in, double 
       M_fit[j]=M0+(M_coeff[0]*dt+M_coeff[1]*dt2)*SOLARMASSINSEC;
       S_fit[j]=S0+S_coeff[0]*dt+S_coeff[1]*dt2;
     }
-  // ----------
+  // ----------*/
 
   // ----- interpolate AK from t_start to t_end -----
   /*double *t_in,*e_in,*v_in,*M_in,*S_in;

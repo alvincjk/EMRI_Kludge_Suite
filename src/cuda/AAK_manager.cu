@@ -45,11 +45,7 @@ GPUAAK::GPUAAK (double T_fit_,
     double init_dt_,
     double dt_,
     bool LISA_,
-    bool backint_,
-    cmplx *data_channel1_,
-    cmplx *data_channel2_,
-    double *noise_channel1_inv_,
-    double *noise_channel2_inv_){
+    bool backint_){
 
     T_fit = T_fit_;
     init_length = init_length_;
@@ -58,10 +54,6 @@ GPUAAK::GPUAAK (double T_fit_,
     dt = dt_;
     LISA = LISA_;
     backint = backint_;
-    data_channel1 = data_channel1_;
-    data_channel2 = data_channel2_;
-    noise_channel1_inv = noise_channel1_inv_;
-    noise_channel2_inv = noise_channel2_inv_;
 
     to_gpu = 1;
 
@@ -96,14 +88,9 @@ GPUAAK::GPUAAK (double T_fit_,
       gpuErrchk(cudaMalloc(&d_data_channel1, fft_length*sizeof(cuDoubleComplex)));
       gpuErrchk(cudaMalloc(&d_data_channel2, fft_length*sizeof(cuDoubleComplex)));
 
-      gpuErrchk(cudaMemcpy(d_data_channel1, data_channel1, fft_length*sizeof(cuDoubleComplex), cudaMemcpyHostToDevice));
-      gpuErrchk(cudaMemcpy(d_data_channel2, data_channel2, fft_length*sizeof(cuDoubleComplex), cudaMemcpyHostToDevice));
 
       gpuErrchk(cudaMalloc(&d_noise_channel1_inv, fft_length*sizeof(double)));
       gpuErrchk(cudaMalloc(&d_noise_channel2_inv, fft_length*sizeof(double)));
-
-      gpuErrchk(cudaMemcpy(d_noise_channel1_inv, noise_channel1_inv, fft_length*sizeof(double), cudaMemcpyHostToDevice));
-      gpuErrchk(cudaMemcpy(d_noise_channel2_inv, noise_channel2_inv, fft_length*sizeof(double), cudaMemcpyHostToDevice));
 
       double_plus_one_size = (length+1)*sizeof(double);  // TODO reduce size properly
       gpuErrchk(cudaMalloc(&d_tvec, (length+1)*sizeof(double)));
@@ -129,6 +116,8 @@ GPUAAK::GPUAAK (double T_fit_,
       //plan = plan_;
 
       //cufftComplex *data;
+
+      printf("FFT plan %d\n", length);
       if (cufftPlan1d(&plan, length, CUFFT_D2Z, BATCH) != CUFFT_SUCCESS){
         	fprintf(stderr, "CUFFT error: Plan creation failed");
         	return;	}
@@ -139,14 +128,26 @@ GPUAAK::GPUAAK (double T_fit_,
           exit(0);
       }
 
-    interp.alloc_arrays(init_length + 1, 9);
+    interp.alloc_arrays(init_length + 1, 4);
 
 }
 
-__global__ void printit(double *arr, int n)
+void GPUAAK::input_data(cmplx *hI_f_, cmplx *hII_f_, double *channel_ASDinv1_, double *channel_ASDinv2_, int len)
 {
-    for (int i=7194300; i<7194305+2; i++)
-    printf("%d %.10e\n", i, arr[i]);
+
+    assert(len == fft_length);
+
+    data_channel1 = hI_f_;
+    data_channel2 = hII_f_;
+    noise_channel1_inv = channel_ASDinv1_;
+    noise_channel2_inv = channel_ASDinv2_;
+
+    gpuErrchk(cudaMemcpy(d_data_channel1, hI_f_, fft_length*sizeof(cuDoubleComplex), cudaMemcpyHostToDevice));
+    gpuErrchk(cudaMemcpy(d_data_channel2, hII_f_, fft_length*sizeof(cuDoubleComplex), cudaMemcpyHostToDevice));
+
+    gpuErrchk(cudaMemcpy(d_noise_channel1_inv, channel_ASDinv1_, fft_length*sizeof(double), cudaMemcpyHostToDevice));
+    gpuErrchk(cudaMemcpy(d_noise_channel2_inv, channel_ASDinv2_, fft_length*sizeof(double), cudaMemcpyHostToDevice));
+
 
 }
 
@@ -340,6 +341,14 @@ void GPUAAK::run_phase_trajectory(
 
 }
 
+
+__global__ void printit(double *arr, int n)
+{
+    for (int i=732000; i<732500; i++)
+    printf("%d %.10e\n", i, arr[i]);
+
+}
+
 void GPUAAK::Likelihood (double *like_out_){
 
     //cudaMemcpy(hI, d_hI, (length+2)*sizeof(double), cudaMemcpyDeviceToHost);
@@ -347,6 +356,11 @@ void GPUAAK::Likelihood (double *like_out_){
     cudaEventCreate(&start);
     cudaEventCreate(&stop);
     cudaEventRecord(start);*/
+
+    /*printit<<<1,1>>>(d_hI, 10);
+    cudaDeviceSynchronize();
+    gpuErrchk(cudaGetLastError());*/
+
 
     if (cufftExecD2Z(plan, d_hI, (cufftDoubleComplex*)d_hI) != CUFFT_SUCCESS){
     fprintf(stderr, "CUFFT error: ExecC2C Forward failed");

@@ -19,7 +19,7 @@ class Converter:
 
         if "ln_mu" in key_order:
             # replace ln_mT and mr with m1 and m2 respectively
-            self.ind_ln_mT = key_order.index("ln_mu")
+            self.ind_ln_mu = key_order.index("ln_mu")
             self.conversions.append(self.ln_mu)
 
         if "cos_iota" in key_order:
@@ -47,9 +47,7 @@ class Converter:
         return x
 
     def ln_distance(self, x):
-        x[self.ind_ln_distance] = (
-            np.exp(x[self.ind_ln_distance]) * 1e9 * ct.parsec
-        )  # Gpc
+        x[self.ind_ln_distance] = np.exp(x[self.ind_ln_distance])  # Gpc
         return x
 
     def cos_iota(self, x):
@@ -62,6 +60,11 @@ class Converter:
 
     def sin_theta_K(self, x):
         x[self.ind_theta_K] = np.arcsin(x[self.ind_theta_K])
+        return x
+
+    def convert(self, x):
+        for func in self.conversions:
+            x = func(x)
         return x
 
 

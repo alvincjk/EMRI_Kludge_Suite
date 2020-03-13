@@ -205,7 +205,7 @@ if run_cuda:
     extensions = [gpu_ext, cpu_ext]
     packages = ["AAKwrapper", "pygpuAAK"]
     package_dir = {"AAKwrapper": "AAKwrapper", "pygpuAAK": "pygpuAAK"}
-    py_modules = ["pygpuAAK.pygpuAAK", "pygpuAAK.convert"]
+    py_modules = ["pygpuAAK.pygpuAAK", "pygpuAAK.convert", "pygpuAAK.LISAnoise"]
 
 else:
     extensions = [cpu_ext]

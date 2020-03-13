@@ -466,7 +466,7 @@ void kernel_create_waveform(double *t, double *hI, double *hII,
       FcrosI=cosq1*cos2phi*sin2psi+cosq*sin2phi*cos2psi;
       FplusII=cosq1*sin2phi*cos2psi+cosq*cos2phi*sin2psi;
       FcrosII=cosq1*sin2phi*sin2psi-cosq*cos2phi*cos2psi;
-      if (i == 1000) printf("%d %e %e %e %e \n", i, FplusI, FplusII, FcrosI, FcrosII);
+
     }
     else{
       FplusI=1.;
