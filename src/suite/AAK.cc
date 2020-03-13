@@ -8,11 +8,7 @@
 #include "KSParMap.h"
 #include "AAK.h"
 
-#include <cstring>
-#include <chrono>
-
 using namespace std;
-using namespace std::chrono;
 
 
 // ----- magnitude of azimuthal angular frequency for prograde/retrograde orbits -----
@@ -178,8 +174,6 @@ void PNevolution(double *t, double *e, double *v, double *M, double *S, double *
   // ----------
 
   // ----- evolve and fit AK from t_0 to t_start -----
-  t_end=min(t_fit[j_end],vlength*timestep);
-
   if(backint){
 
   	j_end=j_max;
@@ -228,7 +222,7 @@ void PNevolution(double *t, double *e, double *v, double *M, double *S, double *
     e_in[j-j_start]=e_fit[j];
     v_in[j-j_start]=v_fit[j];
     M_in[j-j_start]=M_fit[j];
-    S_in[j-j_start]=S_fit[j];
+    S_in[j-j_start]=S_fit[j];    
   }
 
   int i0=vlength-(int)(t_end/timestep);
@@ -240,51 +234,12 @@ void PNevolution(double *t, double *e, double *v, double *M, double *S, double *
   Interp(t_in,v_in,j_end-j_start+1,t,v,vlength+1);
   Interp(t_in,M_in,j_end-j_start+1,t,M,vlength+1);
   Interp(t_in,S_in,j_end-j_start+1,t,S,vlength+1);
-
-  memcpy(t, &t_in[j0-j_start], (j_end-j0+1)*sizeof(double));
-  memcpy(v, &v_in[j0-j_start], (j_end-j0+1)*sizeof(double));
-  memcpy(M, &M_in[j0-j_start],(j_end-j0+1)*sizeof(double));
-  memcpy(e, &e_in[j0-j_start], (j_end-j0+1)*sizeof(double));
-  memcpy(S, &S_in[j0-j_start], (j_end-j0+1)*sizeof(double));
-
-  for (int i=0; i<(j_end-j0+1); i++) printf("%e %e %e %e %e\n", t[i], v[i], e[i], M[i], S[i]);
-  printf("%d %d %d %e %e %e, %e, %e\n", j_end, j_start, j0, t_end, v_AK[j0], e_AK[j0], e_AK[j0+1], e_AK[j0-1]);
   // ----------
 
   // ----- evolve phases from t_0 to t_end -----
   if(j_max==j_max_temp) *i_plunge=vlength-1;
   else *i_plunge=i0+(int)(t_fit[j_min]/timestep);
-
-  double *t_find_plunge = (double*) malloc(1*sizeof(double));
-  double *v_find_plunge = (double*) malloc(1*sizeof(double));
-  double *e_find_plunge = (double*) malloc(1*sizeof(double));
-  double *M_find_plunge = (double*) malloc(1*sizeof(double));
-  double *S_find_plunge = (double*) malloc(1*sizeof(double));
-
-  *t_find_plunge = (*i_plunge-i0)*timestep;
-
-  Interp(t_in,e_in,j_end-j_start+1,t_find_plunge,e_find_plunge,1);
-  Interp(t_in,v_in,j_end-j_start+1,t_find_plunge,v_find_plunge,1);
-  Interp(t_in,M_in,j_end-j_start+1,t_find_plunge,M_find_plunge,1);
-  Interp(t_in,S_in,j_end-j_start+1,t_find_plunge,S_find_plunge,1);
-
-  *i_buffer=(int)(10./(OmegaPhi(*v_find_plunge,
-                                *e_find_plunge,
-                                coslam,
-                                *S_find_plunge,*M_find_plunge)/2./M_PI)/timestep)+1; // 10 orbits after plunge
-
-  double t_clip = (*i_plunge + *i_buffer - i0)*timestep;
-
-  free(t_find_plunge);
-  free(e_find_plunge);
-  free(v_find_plunge);
-  free(M_find_plunge);
-  free(S_find_plunge);
-
-
-
-  printf("i0: %d, %e, %e, %e / %e vlength: %d, i_plunge: %d, i_buffer: %d, %e, %e, %e\n", i0, t[i0], t[*i_plunge], t[*i_plunge + *i_buffer], t_clip, vlength, *i_plunge, *i_buffer, t_end, vlength*timestep, (*i_plunge + *i_buffer)*timestep);
-  printf("%e %e\n", dt_large, dt_small);
+  *i_buffer=(int)(10./(OmegaPhi(v[*i_plunge],e[*i_plunge],coslam,S[*i_plunge],M[*i_plunge])/2./M_PI)/timestep)+1; // 10 orbits after plunge
 
   gim[i0]=gim0;
   Phi[i0]=Phi0;
@@ -521,7 +476,7 @@ void waveform(double *t, double *hI, double *hII, double timestep, int vlength, 
       FplusII=s2psi_ldc;
       FcrosII=c2psi_ldc;
     }
-
+    
     double Amp=pow(OmegaPhi(v,e,coslam,S,M)*M_phys*SOLARMASSINSEC,2./3.)*zeta;
 
     for(int n=1;n<=nmodes;n++){
@@ -633,3 +588,4 @@ void GenWave(double *t, double *hI, double *hII, double timestep, int vlength, d
   return;
 
 }
+
