@@ -17,6 +17,8 @@ def P_acc(f):
 
 
 def S_c(f, dur=4):
+    if dur == 0 or dur is None:
+        return 0.0
     if dur not in [0.5, 1, 2, 4]:
         raise ValueError("dur needs to be 0.5, 1, 2, or 4 years.")
 
@@ -35,7 +37,7 @@ def S_c(f, dur=4):
 
 
 def LISA_Noise(f, L=2.5e9, f_star=19.09e-3, dur=4):
-    S_n = 20.0 / (3.0 * L ** 2) * (P_OMS(f) + 4 * P_acc(f) / (2 * np.pi * f) ** 4) * (
-        1 + 6 / 10 * (f / f_star) ** 2
-    ) + S_c(f, dur=4)
+    S_n = 10.0 / (3.0 * L ** 2) * (
+        P_OMS(f) + 2 * (1 + np.cos(f / f_star) ** 2) * P_acc(f) / (2 * np.pi * f) ** 4
+    ) * (1 + 6 / 10 * (f / f_star) ** 2) + S_c(f, dur=dur)
     return S_n
