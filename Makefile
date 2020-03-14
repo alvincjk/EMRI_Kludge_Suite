@@ -39,8 +39,11 @@ SYSLIBS = -lm -lgsl -lgslcblas -lfftw3
 
 CFLAGS = -O3 -Wall -Wno-unused -Wno-uninitialized -Wno-deprecated -fPIC
 
-GSL_LIB = /Users/michaelkatz/anaconda3/envs/kludge_env/lib
-GSL_INCLUDE = /Users/michaelkatz/anaconda3/envs/kludge_env/include
+GSL_LIB = /usr/local/opt/gsl/lib
+GSL_INCLUDE = /usr/local/opt/gsl/include
+
+FFTW_INCLUDE = /usr/local/opt/fftw/include
+FFTW_LIB = /usr/local/opt/fftw/lib
 #############################################################################
 
 # Executable files
@@ -48,22 +51,22 @@ GSL_INCLUDE = /Users/michaelkatz/anaconda3/envs/kludge_env/include
 all : AAK_Phase AAK_TDI AK_TDI AAK_Waveform AK_Waveform NK_Waveform
 
 AAK_Phase : AAK_Phase.cc -lKS -lIEKG -lGKG -lCirc -lLB -lRRGW -lNR Globals.h GKTrajFast.h KSParMap.h KSTools.h AAK.h AAKPhase.h AAKpy.h
-	$(CC) $(EXECSRC)/AAK_Phase.cc -o $(BIN)/AAK_Phase $(CFLAGS) -I$(INC) -I$(GSL_INCLUDE) -L$(LIB) -L$(GSL_LIB) -lKS -lIEKG -lCirc -lGKG -lLB -lRRGW -lNR $(SYSLIBS)
+	$(CC) $(EXECSRC)/AAK_Phase.cc -o $(BIN)/AAK_Phase $(CFLAGS) -I$(INC) -I$(GSL_INCLUDE) -I$(FFTW_INCLUDE) -L$(LIB) -L$(GSL_LIB) -L$(FFTW_LIB) -lKS -lIEKG -lCirc -lGKG -lLB -lRRGW -lNR $(SYSLIBS)
 
 AAK_TDI : AAK_TDI.cc -lKS -lIEKG -lGKG -lCirc -lLB -lRRGW -lNR Globals.h GKTrajFast.h KSParMap.h KSTools.h AAKTDI.h AAKpy.h
-	$(CC) $(EXECSRC)/AAK_TDI.cc -o $(BIN)/AAK_TDI $(CFLAGS) -I$(INC) -I$(GSL_INCLUDE) -L$(LIB) -L$(GSL_LIB) -lKS -lIEKG -lCirc -lGKG -lLB -lRRGW -lNR $(SYSLIBS)
+	$(CC) $(EXECSRC)/AAK_TDI.cc -o $(BIN)/AAK_TDI $(CFLAGS) -I$(INC) -I$(GSL_INCLUDE) -I$(FFTW_INCLUDE) -L$(LIB) -L$(GSL_LIB) -L$(FFTW_LIB) -lKS -lIEKG -lCirc -lGKG -lLB -lRRGW -lNR $(SYSLIBS)
 
 AK_TDI : AK_TDI.cc -lKS -lIEKG -lGKG -lCirc -lLB -lRRGW -lNR Globals.h IEKG.h KSParMap.h KSTools.h AKTDI.h AAKpy.h
-	$(CC) $(EXECSRC)/AK_TDI.cc -o $(BIN)/AK_TDI $(CFLAGS) -I$(INC) -I$(GSL_INCLUDE) -L$(LIB) -L$(GSL_LIB) -lKS -lIEKG -lCirc -lGKG -lLB -lRRGW -lNR $(SYSLIBS)
+	$(CC) $(EXECSRC)/AK_TDI.cc -o $(BIN)/AK_TDI $(CFLAGS) -I$(INC) -I$(GSL_INCLUDE) -I$(FFTW_INCLUDE) -L$(LIB) -L$(GSL_LIB) -L$(FFTW_LIB) -lKS -lIEKG -lCirc -lGKG -lLB -lRRGW -lNR $(SYSLIBS)
 
 AAK_Waveform : AAK_Waveform.cc -lKS -lIEKG -lGKG -lCirc -lLB -lRRGW -lNR Globals.h GKTrajFast.h KSParMap.h KSTools.h AAK.h AAKpy.h
-	$(CC) $(EXECSRC)/AAK_Waveform.cc -o $(BIN)/AAK_Waveform $(CFLAGS) -I$(INC) -I$(GSL_INCLUDE) -L$(LIB) -L$(GSL_LIB) -lKS -lIEKG -lCirc -lGKG -lLB -lRRGW -lNR $(SYSLIBS)
+	$(CC) $(EXECSRC)/AAK_Waveform.cc -o $(BIN)/AAK_Waveform $(CFLAGS) -I$(INC) -I$(GSL_INCLUDE) -I$(FFTW_INCLUDE) -L$(LIB) -L$(GSL_LIB) -L$(FFTW_LIB) -lKS -lIEKG -lCirc -lGKG -lLB -lRRGW -lNR $(SYSLIBS)
 
 AK_Waveform : AK_Waveform.cc -lKS -lIEKG -lGKG -lCirc -lLB -lRRGW -lNR Globals.h IEKG.h KSParMap.h KSTools.h AK.h
-	$(CC) $(EXECSRC)/AK_Waveform.cc -o $(BIN)/AK_Waveform $(CFLAGS) -I$(INC) -I$(GSL_INCLUDE) -L$(LIB) -L$(GSL_LIB) -lKS -lIEKG -lCirc -lGKG -lLB -lRRGW -lNR $(SYSLIBS)
+	$(CC) $(EXECSRC)/AK_Waveform.cc -o $(BIN)/AK_Waveform $(CFLAGS) -I$(INC) -I$(GSL_INCLUDE) -I$(FFTW_INCLUDE) -L$(LIB) -L$(GSL_LIB) -L$(FFTW_LIB) -lKS -lIEKG -lCirc -lGKG -lLB -lRRGW -lNR $(SYSLIBS)
 
 NK_Waveform : NK_Waveform.cc -lKS -lIEKG -lGKG -lCirc -lLB -lRRGW -lNR Globals.h GKInsp.h GKR.h IEKG.h CKG.h Inspiral.h Cosmology.h KSParMap.h KSTools.h DopplerShiftedWaveform.h
-	$(CC) $(EXECSRC)/NK_Waveform.cc -o $(BIN)/NK_Waveform $(CFLAGS) -I$(INC) -I$(GSL_INCLUDE) -L$(LIB) -L$(GSL_LIB) -lKS -lIEKG -lCirc -lGKG -lLB -lRRGW -lNR $(SYSLIBS)
+	$(CC) $(EXECSRC)/NK_Waveform.cc -o $(BIN)/NK_Waveform $(CFLAGS) -I$(INC) -I$(GSL_INCLUDE) -I$(FFTW_INCLUDE) -L$(LIB) -L$(GSL_LIB) -L$(FFTW_LIB) -lKS -lIEKG -lCirc -lGKG -lLB -lRRGW -lNR $(SYSLIBS)
 
 #############################################################################
 
@@ -90,7 +93,7 @@ KSOBJS = AAK.o AAKPhase.o AAKTDI.o AK.o AKTDI.o GKTrajFast.o KSParMap.o KSTools.
 .INTERMEDIATE : $(CIRCOBJS) $(GKGOBJS) $(IEKGOBJS) $(LBOBJS) $(NROBJS) $(RRGWOBJS) $(KSOBJS)
 
 %.o : %.cc
-	$(CC) $(CFLAGS) -I$(INC) -I$(GSL_INCLUDE) -c $< -o $@
+	$(CC) $(CFLAGS) -I$(INC) -I$(GSL_INCLUDE) -I$(FFTW_INCLUDE) -c $< -o $@
 
 #############################################################################
 
