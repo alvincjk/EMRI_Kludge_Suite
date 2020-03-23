@@ -3,8 +3,12 @@ from scipy import constants as ct
 
 from AAKwrapper import AAKwrapper as cpu_AAK
 from gpuAAK import GPUAAK
-from pygpuAAK.LISAnoise import LISA_Noise
-from pygpuAAK.convert import Converter, Recycler
+from pygpuAAK.LISAnoise import (
+    LISA_Noise,
+    generate_noise_frequencies,
+    generate_noise_single_channel,
+)
+from pygpuAAK.convert import Converter
 
 import tdi
 
@@ -26,6 +30,7 @@ class pyGPUAAK:
             "nwalkers": 1,
             "ndevices": 1,
             "wd_dur": 1,
+            "add_noise": None,
         }
 
         self.ndim = len(key_order)
@@ -33,8 +38,7 @@ class pyGPUAAK:
         self.init_dt = init_dt
         self.dt = dt
 
-        self.converter = Converter(key_order)
-        self.recycler = Recycler(key_order)
+        self.converter = Converter("emri", key_order)
         self.key_order = key_order
 
         self.total_time = self.length * self.dt
@@ -43,20 +47,6 @@ class pyGPUAAK:
             setattr(self, prop, kwargs.get(prop, default))
             # TODO: check this
             kwargs[prop] = kwargs.get(prop, default)
-
-        freqs = np.fft.rfftfreq(self.length, d=dt)
-        self.fft_length = len(freqs)
-        df = 1.0 / (self.length * self.dt)
-
-        freqs[0] = freqs[1] / 10.0
-
-        self.noise_channel1_inv = (
-            1.0 / np.sqrt(LISA_Noise(freqs, dur=self.wd_dur)) * np.sqrt(dt / length)
-        )  # dt dt df = dt
-
-        self.noise_channel2_inv = (
-            1.0 / np.sqrt(LISA_Noise(freqs, dur=self.wd_dur)) * np.sqrt(dt / length)
-        )  # dt dt df = dt
 
         self.generator = GPUAAK(
             self.T_fit,
@@ -68,45 +58,75 @@ class pyGPUAAK:
             self.backint,
         )
 
+        self.determine_freqs_noise(**kwargs)
+
         self.data_info = data_info
 
-        # whiten data stream
-        if "channel1" in data_info:
+        self.create_input_data(**kwargs)
 
-            self.injection_channel1 = data_info["channel1"].copy()
-            self.injection_channel2 = data_info["channel2"].copy()
+    def determine_freqs_noise(self, **kwargs):
+        self.freqs = generate_noise_frequencies(self.length * self.dt, 1 / self.dt)
+        self.fft_length = len(self.freqs)
+        df = 1.0 / (self.length * self.dt)
+
+        self.freqs[0] = self.freqs[1] / 10.0
+
+        self.added_noise = [0.0, 0.0]
+        if self.add_noise is not None:
+            self.added_noise[0] = generate_noise_single_channel(
+                LISA_Noise, [], {"dur": self.wd_dur}, df, self.freqs
+            )
+
+            self.added_noise[1] = generate_noise_single_channel(
+                LISA_Noise, [], {"dur": self.wd_dur}, df, self.freqs
+            )
+
+    def create_input_data(self, **kwargs):
+
+        self.noise_channel1_inv = (
+            1.0
+            / np.sqrt(LISA_Noise(self.freqs, dur=self.wd_dur))
+            * np.sqrt(self.dt / self.length)
+        )  # dt dt df = dt
+
+        self.noise_channel2_inv = (
+            1.0
+            / np.sqrt(LISA_Noise(self.freqs, dur=self.wd_dur))
+            * np.sqrt(self.dt / self.length)
+        )  # dt dt df = dt
+
+        if "channel1" in self.data_info:
+
+            self.injection_channel1 = self.data_info["channel1"].copy()
+            self.injection_channel2 = self.data_info["channel2"].copy()
 
         else:
-            injection_params = data_info["injection_params"]
+            self.injection_params = self.data_info["injection_params"]
 
-            data_channel1_temp = np.zeros_like(
-                self.noise_channel1_inv, dtype=np.complex128
-            )
-            data_channel2_temp = np.zeros_like(
+            data_channel_temp = np.zeros_like(
                 self.noise_channel1_inv, dtype=np.complex128
             )
 
-            noise_channel1_inv_temp = np.ones_like(
-                self.noise_channel1_inv, dtype=np.float64
-            )
-            noise_channel2_inv_temp = np.ones_like(
+            noise_channel_inv_temp = np.ones_like(
                 self.noise_channel1_inv, dtype=np.float64
             )
 
             self.generator.input_data(
-                data_channel1_temp,
-                data_channel2_temp,
-                noise_channel1_inv_temp,
-                noise_channel2_inv_temp,
+                data_channel_temp,
+                data_channel_temp,
+                noise_channel_inv_temp,
+                noise_channel_inv_temp,
             )
 
-            (self.injection_channel1, self.injection_channel2) = create_data(
-                injection_params,
-                self.generator,
-                self.converter,
-                self.recycler,
-                self.key_order,
+            injection_arr = np.tile(
+                np.array([self.injection_params.get(key) for key in self.key_order]),
+                (1, 1),
             )
+
+            hI_f, hII_f = self.getNLL(injection_arr.T, return_TDI=True)
+
+            self.injection_channel1 = hI_f[0] + self.added_noise[0]
+            self.injection_channel2 = hII_f[0] + self.added_noise[1]
 
         self.data_channel1 = self.noise_channel1_inv * self.injection_channel1
         self.data_channel2 = self.noise_channel2_inv * self.injection_channel2
@@ -199,7 +219,15 @@ class pyGPUAAK:
             )
 
             if return_TDI or return_waveform:
-                _, hI[i], hII[i] = self.generator.GetWaveform(is_Fourier=is_Fourier)
+                _, temp1, temp2 = self.generator.GetWaveform(is_Fourier=is_Fourier)
+
+                if is_Fourier:
+                    hI[i].real, hI[i].imag = temp1[0::2], temp1[1::2]
+                    hII[i].real, hII[i].imag = temp2[0::2], temp2[1::2]
+
+                else:
+                    hI[i] = temp1  # [:-2]
+                    hII[i] = temp2  # [:-2]
 
         if return_TDI or return_waveform:
             return hI, hII
@@ -211,7 +239,7 @@ class pyGPUAAK:
 
     def getNLL(self, x, **kwargs):
         # changes parameters to in range in actual array (not copy)
-        x = self.recycler.recycle(x)
+        x = self.converter.recycle(x)
 
         # converts parameters in copy, not original array
         x_in = self.converter.convert(x.copy())
@@ -268,14 +296,3 @@ class pyGPUAAK:
                 Mij[j][i] = inner_product
 
         return Mij
-
-
-def create_data(injection_params, generator, converter, recycler, key_order):
-
-    injection_arr = np.array([injection_params.get(key) for key in key_order])
-    injection_arr = converter.convert(injection_arr)
-    injection_arr = recycler.recycle(injection_arr)
-    _, _ = generator.WaveformThroughLikelihood(*injection_arr)
-
-    _, hI_f, hII_f = generator.GetWaveform(is_Fourier=True)
-    return hI_f, hII_f

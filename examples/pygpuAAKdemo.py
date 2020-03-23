@@ -9,25 +9,26 @@ import time
 
 
 def test():
-    iota = 0.5
-    s = 0.5
-    p = 7.0
-    e = 0.5
+
+    iota = 2.142199999999910620e00
+    s = 9.697000000000000e-01
+    p = 13.0  # 1.081981106649140578e01
+    e = 2.286566522026051151e-01
     T_fit = 1.0
     init_length = 100000
     length = 4194304
     init_dt = 100.0
     dt = 15.0
-    M = 1134944.869275098
-    mu = 100.489999547765798
-    gamma = 0.0
-    psi = 0.0
-    alph = 1.1
-    theta_S = np.pi - 0.49894448924039203
-    phi_S = 2.23279697592
-    theta_K = 0.8
-    phi_K = 0.8
-    D = 1.8
+    M = 1.134944869275921956e06
+    mu = 2.948999954778721033e01
+    gamma = 5.659686260028827576e00
+    psi = 2.391562081325919742e00
+    alph = 1.175479042396851526e00
+    theta_S = 1.071851837554504527e00
+    phi_S = 2.232796975919999927e00
+    theta_K = np.pi - 1.522100180545759907e00
+    phi_K = 3.946698166040000011e00
+    D = 1.0
     LISA = True
     backint = True
 
@@ -71,7 +72,7 @@ def test():
         "phi_S",
         "sin_theta_K",
         "phi_K",
-        "ln_distance",
+        "ln_D",
     ]
 
     """
@@ -98,7 +99,7 @@ def test():
     noise_channels = {"channel1": ASD ** 2, "channel2": ASD ** 2}
     """
 
-    kwargs = {"T_fit": 1.0, "LISA": True, "backint": True}
+    kwargs = {"T_fit": 1.0, "LISA": True, "backint": True, "wd_dur": 0}
 
     injection_vals = [
         np.cos(iota),
@@ -127,7 +128,7 @@ def test():
                 s,
                 p,
                 e,
-                np.log(M) * 0.99999999,
+                np.log(M),
                 np.log(mu),
                 gamma,
                 psi,
@@ -142,10 +143,14 @@ def test():
         (10, 1),
     ).T
 
-    likelihood = like_class.getNLL(x)
-    hI, hII = like_class.getNLL(x, return_waveform=True)
+    e = np.array([0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9])
+    x[3] = e
 
-    num = 1
+    likelihood = like_class.getNLL(x)
+
+    fisher = like_class.get_Fisher(x.T[0])
+
+    num = 100
     st = time.perf_counter()
     for i in range(num):
         likelihood = like_class.getNLL(x)
@@ -158,7 +163,6 @@ def test():
     print("Time per likelihood calculation:", (et - st) / (num * x.shape[1]))
 
     snr = like_class.getNLL(x, return_snr=True)
-    fisher = like_class.get_Fisher(x.T[0])
     print("SNR: ", snr, "Likelihood:", likelihood)
 
 

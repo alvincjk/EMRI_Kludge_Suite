@@ -41,3 +41,23 @@ def LISA_Noise(f, L=2.5e9, f_star=19.09e-3, dur=4):
         P_OMS(f) + 2 * (1 + np.cos(f / f_star) ** 2) * P_acc(f) / (2 * np.pi * f) ** 4
     ) * (1 + 6 / 10 * (f / f_star) ** 2) + S_c(f, dur=dur)
     return S_n
+
+
+def generate_noise_frequencies(Tobs, fs):
+    df = 1.0 / Tobs
+    number_of_samples = int(np.round(Tobs * fs))
+    number_of_frequencies = int(np.round(number_of_samples / 2) + 1)
+
+    noise_freqs = np.linspace(start=0, stop=fs / 2, num=number_of_frequencies)
+
+    return noise_freqs
+
+
+def generate_noise_single_channel(noise_func, noise_args, noise_kwargs, df, data_freqs):
+
+    norm1 = 0.5 * (1.0 / df) ** 0.5
+    re = np.random.normal(0, norm1, data_freqs.shape)
+    im = np.random.normal(0, norm1, data_freqs.shape)
+    htilde = re + 1j * im
+
+    return np.sqrt(noise_func(data_freqs, *noise_args, **noise_kwargs)) * htilde

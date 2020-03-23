@@ -5,122 +5,116 @@ needed for the likelihood calculation.
 import numpy as np
 from scipy import constants as ct
 from scipy import stats
+from astropy import units
 import warnings
 
 
+def modpi(phase):
+    # from sylvan
+    return phase - np.floor(phase / np.pi) * np.pi
+
+
+def mod2pi(phase):
+    # from sylvan
+    return phase - np.floor(phase / (2 * np.pi)) * 2 * np.pi
+
+
+source_recycle_guide = {
+    "emri": {
+        "phi_S": 2 * np.pi,
+        "phi_K": 2 * np.pi,
+        "phiRef": 2 * np.pi,
+        "gamma": 2 * np.pi,
+        "psi": 2 * np.pi,
+        "alpha": 2 * np.pi,
+    },
+}
+
+
 class Converter:
-    def __init__(self, key_order, **kwargs):
+    def __init__(
+        self,
+        source_type,
+        key_order,
+        dist_unit="Gpc",
+        t0=None,
+        transform_frame=None,
+        **kwargs
+    ):
 
+        variables_to_recycle = source_recycle_guide[source_type].keys()
+        recycle_guide = source_recycle_guide[source_type]
+
+        if t0 is not None:
+            self.t0 = t0 * YRSID_SI
+
+        self.dist_unit = getattr(units, dist_unit)
+        self.dist_conversion = self.dist_unit.to(units.m)
+
+        self.recycles = []
         self.conversions = []
-        if "ln_mT" in key_order:
-            # replace ln_mT and mr with m1 and m2 respectively
-            self.ind_ln_mT = key_order.index("ln_mT")
-            self.conversions.append(self.ln_mT)
+        self.inds_list = []
+        self.keys = []
+        for i, key_in in enumerate(key_order):
 
-        if "ln_mu" in key_order:
-            # replace ln_mT and mr with m1 and m2 respectively
-            self.ind_ln_mu = key_order.index("ln_mu")
-            self.conversions.append(self.ln_mu)
+            quant = key_in.split("_")[-1]
+            setattr(self, "ind_" + quant, i)
 
-        if "cos_iota" in key_order:
-            self.ind_iota = key_order.index("cos_iota")
-            self.conversions.append(self.cos_iota)
+            self.inds_list.append(getattr(self, "ind_" + quant))
+            self.keys.append(quant)
+            if key_in.split("_")[0] in ["ln", "cos", "sin"]:
+                self.conversions.append(
+                    [getattr(self, key_in.split("_")[0] + "_convert"), np.array([i])]
+                )
 
-        if "sin_theta_S" in key_order:
-            self.ind_theta_S = key_order.index("sin_theta_S")
-            self.conversions.append(self.sin_theta_S)
+            if quant == "distance":
+                self.conversions.append([self.convert_distance, np.array([i])])
 
-        if "sin_theta_K" in key_order:
-            self.ind_theta_K = key_order.index("sin_theta_K")
-            self.conversions.append(self.sin_theta_K)
+            if quant in variables_to_recycle:
+                wrap_value = recycle_guide[quant]
+                if wrap_value == 2 * np.pi:
+                    self.recycles.append([self.wrap_2pi, np.array([i])])
 
-        if "ln_distance" in key_order:
-            self.ind_ln_distance = key_order.index("ln_distance")
-            self.conversions.append(self.ln_distance)
+                elif wrap_value == np.pi:
+                    self.recycles.append([self.wrap_pi, np.array([i])])
 
-    def ln_mT(self, x):
-        x[self.ind_ln_mT] = np.exp(x[self.ind_ln_mT])
-        return x
+                else:
+                    raise ValueError("wrap_value must be preprogrammed available")
 
-    def ln_mu(self, x):
-        x[self.ind_ln_mu] = np.exp(x[self.ind_ln_mu])
-        return x
+    def ln_convert(self, x):
+        return np.exp(x)
 
-    def ln_distance(self, x):
-        x[self.ind_ln_distance] = np.exp(x[self.ind_ln_distance])  # Gpc
-        return x
+    def cos_convert(self, x):
+        return np.arccos(x)
 
-    def cos_iota(self, x):
-        x[self.ind_iota] = np.arccos(x[self.ind_iota])
-        return x
+    def sin_convert(self, x):
+        return np.arcsin(x)
 
-    def sin_theta_S(self, x):
-        x[self.ind_theta_S] = np.arcsin(x[self.ind_theta_S])
-        return x
-
-    def sin_theta_K(self, x):
-        x[self.ind_theta_K] = np.arcsin(x[self.ind_theta_K])
-        return x
+    def convert_distance(self, x):
+        return x * self.dist_conversion
 
     def convert(self, x):
-        for func in self.conversions:
-            x = func(x)
+        for func, inds in self.conversions:
+            x[inds] = np.asarray(func(*x[inds]))
         return x
 
+    def wrap_2pi(self, x):
+        return x % (2 * np.pi)
 
-class Recycler:
-    def __init__(self, key_order, **kwargs):
+    def wrap_pi(self, x):
+        return x % (np.pi)
 
-        # Setup of recycler
-        self.recycles = []
+        """if x[self.ind_beta] < -np.pi/2 or x[self.ind_beta] > np.pi/2:
+            # assumes beta = 0 at ecliptic plane [-pi/2, pi/2]
+            x_trans = np.cos(x[self.ind_beta])*np.cos(x[self.ind_lam])
+            y_trans = np.cos(x[self.ind_beta])*np.sin(x[self.ind_lam])
+            z_trans = np.sin(x[self.ind_beta])
 
-        if "phi_S" in key_order:
-            # assumes beta is also there
-            self.ind_phi_S = key_order.index("phi_S")
-            self.recycles.append(self.phi_S)
-
-        if "phi_K" in key_order:
-            # assumes beta is also there
-            self.ind_phi_K = key_order.index("phi_K")
-            self.recycles.append(self.phi_K)
-
-        if "gamma" in key_order:
-            self.ind_gamma = key_order.index("gamma")
-            self.recycles.append(self.gamma)
-
-        if "psi" in key_order:
-            self.ind_psi = key_order.index("psi")
-            self.recycles.append(self.psi)
-
-        if "alph" in key_order:
-            self.ind_alph = key_order.index("alph")
-            self.recycles.append(self.alph)
-
-    def phi_S(self, x):
-        x[self.ind_phi_S] = x[self.ind_phi_S] % (2 * np.pi)
-        return x
-
-    def phi_K(self, x):
-        x[self.ind_phi_K] = x[self.ind_phi_K] % (2 * np.pi)
-        return x
-
-    def phiRef(self, x):
-        x[self.ind_phiRef] = x[self.ind_phiRef] % (2 * np.pi)
-        return x
-
-    def gamma(self, x):
-        x[self.ind_gamma] = x[self.ind_gamma] % (2 * np.pi)
-        return x
-
-    def psi(self, x):
-        x[self.ind_psi] = x[self.ind_psi] % (2 * np.pi)
-        return x
-
-    def alph(self, x):
-        x[self.ind_alph] = x[self.ind_alph] % (2 * np.pi)
-        return x
+            x[self.ind_lam] = np.arctan2(y_trans, x_trans)
+            x[self.ind_beta] = np.arcsin(z_trans/np.sqrt(x_trans**2 + y_trans**2 + z_trans**2))  # check this with eccliptic coordinates
+        """
 
     def recycle(self, x):
-        for func in self.recycles:
-            x = func(x)
+        for func, inds in self.recycles:
+            x[inds] = np.asarray(func(*x[inds]))
         return x
