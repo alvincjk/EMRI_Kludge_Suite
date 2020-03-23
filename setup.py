@@ -170,6 +170,12 @@ if run_cuda:
             "gcc": ["-std=c99", "-Wno-unused-function"],  # , "-g"]
             "nvcc": [
                 "-arch=sm_70",
+                "-gencode=arch=compute_35,code=sm_35",
+                "-gencode=arch=compute_50,code=sm_50",
+                "-gencode=arch=compute_52,code=sm_52",
+                "-gencode=arch=compute_60,code=sm_60",
+                "-gencode=arch=compute_61,code=sm_61",
+                "-gencode=arch=compute_70,code=sm_70",
                 "--ptxas-options=-v",
                 "-c",
                 "--compiler-options",
@@ -211,7 +217,7 @@ else:
     extensions = [cpu_ext]
     packages = ["AAKwrapper"]
     package_dir = {"AAKwrapper": "AAKwrapper"}
-    py_modules = []
+    py_modules = ["pygpuAAK.convert", "pygpuAAK.LISAnoise"]
 
 setup(
     name="AAKwrapper",
