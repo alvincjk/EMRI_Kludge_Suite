@@ -125,6 +125,8 @@ class pyGPUAAK:
 
             hI_f, hII_f = self.getNLL(injection_arr.T, return_TDI=True)
 
+            self.injection_channel1_no_noise = hI_f
+            self.injection_channel2_no_noise = hII_f
             self.injection_channel1 = hI_f[0] + self.added_noise[0]
             self.injection_channel2 = hII_f[0] + self.added_noise[1]
 
@@ -233,7 +235,7 @@ class pyGPUAAK:
             return hI, hII
 
         if return_snr:
-            return np.sqrt(h_h)
+            return np.sqrt(d_h), np.sqrt(h_h)
 
         return 1 / 2 * (self.d_d + h_h - 2 * d_h)
 

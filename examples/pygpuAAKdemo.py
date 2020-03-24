@@ -13,7 +13,7 @@ def test():
     iota = 2.142199999999910620e00
     s = 9.697000000000000e-01
     p = 13.0  # 1.081981106649140578e01
-    e = 2.286566522026051151e-01
+    e = 0.2
     T_fit = 1.0
     init_length = 100000
     length = 4194304
@@ -68,10 +68,10 @@ def test():
         "gamma",
         "psi",
         "alph",
-        "sin_theta_S",
-        "phi_S",
-        "sin_theta_K",
-        "phi_K",
+        "sin_thetaS",
+        "phiS",
+        "sin_thetaK",
+        "phiK",
         "ln_D",
     ]
 
@@ -99,7 +99,13 @@ def test():
     noise_channels = {"channel1": ASD ** 2, "channel2": ASD ** 2}
     """
 
-    kwargs = {"T_fit": 1.0, "LISA": True, "backint": True, "wd_dur": 0}
+    kwargs = {
+        "T_fit": 1.0,
+        "LISA": True,
+        "backint": True,
+        "wd_dur": 0,
+        "add_noise": True,
+    }
 
     injection_vals = [
         np.cos(iota),
@@ -150,7 +156,12 @@ def test():
 
     fisher = like_class.get_Fisher(x.T[0])
 
-    num = 100
+    snr = like_class.getNLL(x, return_snr=True)
+    import pdb
+
+    pdb.set_trace()
+
+    num = 1
     st = time.perf_counter()
     for i in range(num):
         likelihood = like_class.getNLL(x)
