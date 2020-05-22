@@ -1,6 +1,6 @@
 # EMRI Kludge Suite
 
-**Version 0.5.1**
+**Version 0.5.2**
 
 This is a C/C++ suite that allows kludge waveforms for extreme-mass-ratio inspirals (EMRIs) to be generated with shared settings and parameters. The three waveforms included in the suite are the augmented analytic kludge (AAK) [1,2], the analytic kludge (AK) [3], and the numerical kludge (NK) [4]. EMRI Kludge Suite is part of the Black Hole Perturbation Toolkit; visit http://bhptoolkit.org for more information.
 
