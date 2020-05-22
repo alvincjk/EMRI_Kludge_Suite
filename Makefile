@@ -21,7 +21,7 @@ ALLSRCS = $(CIRCSRC):$(EXECSRC):$(IEKGSRC):$(NRSRC):$(UTILSRC):$(KSSRC)
 
 VPATH = $(BIN):$(INC):$(LIB):$(ALLSRCS)
 
-ifeq "$(shell which icc >/dev/null 2>&1; echo $$?)" "0" 
+ifeq "$(shell which icc >/dev/null 2>&1; echo $$?)" "0"
 COMPILER_TYPE=intel
 else ifeq "$(shell which g++ >/dev/null 2>&1; echo $$?)" "0"
 COMPILER_TYPE=gnu
@@ -29,7 +29,7 @@ endif
 
 ifeq ($(COMPILER_TYPE),intel)
 CC = icpc
-else ifeq ($(COMPILER_TYPE),gnu) 
+else ifeq ($(COMPILER_TYPE),gnu)
 CC = g++
 endif
 
@@ -39,6 +39,11 @@ SYSLIBS = -lm -lgsl -lgslcblas -lfftw3
 
 CFLAGS = -O3 -Wall -Wno-unused -Wno-uninitialized -Wno-deprecated -fPIC
 
+GSL_LIB = /usr/local/opt/gsl/lib
+GSL_INCLUDE = /usr/local/opt/gsl/include
+
+FFTW_INCLUDE = /usr/local/opt/fftw/include
+FFTW_LIB = /usr/local/opt/fftw/lib
 #############################################################################
 
 # Executable files
@@ -46,22 +51,22 @@ CFLAGS = -O3 -Wall -Wno-unused -Wno-uninitialized -Wno-deprecated -fPIC
 all : AAK_Phase AAK_TDI AK_TDI AAK_Waveform AK_Waveform NK_Waveform
 
 AAK_Phase : AAK_Phase.cc -lKS -lIEKG -lGKG -lCirc -lLB -lRRGW -lNR Globals.h GKTrajFast.h KSParMap.h KSTools.h AAK.h AAKPhase.h AAKpy.h
-	$(CC) $(EXECSRC)/AAK_Phase.cc -o $(BIN)/AAK_Phase $(CFLAGS) -I$(INC) -L$(LIB) -lKS -lIEKG -lCirc -lGKG -lLB -lRRGW -lNR $(SYSLIBS)
+	$(CC) $(EXECSRC)/AAK_Phase.cc -o $(BIN)/AAK_Phase $(CFLAGS) -I$(INC) -I$(GSL_INCLUDE) -I$(FFTW_INCLUDE) -L$(LIB) -L$(GSL_LIB) -L$(FFTW_LIB) -lKS -lIEKG -lCirc -lGKG -lLB -lRRGW -lNR $(SYSLIBS)
 
 AAK_TDI : AAK_TDI.cc -lKS -lIEKG -lGKG -lCirc -lLB -lRRGW -lNR Globals.h GKTrajFast.h KSParMap.h KSTools.h AAKTDI.h AAKpy.h
-	$(CC) $(EXECSRC)/AAK_TDI.cc -o $(BIN)/AAK_TDI $(CFLAGS) -I$(INC) -L$(LIB) -lKS -lIEKG -lCirc -lGKG -lLB -lRRGW -lNR $(SYSLIBS)
+	$(CC) $(EXECSRC)/AAK_TDI.cc -o $(BIN)/AAK_TDI $(CFLAGS) -I$(INC) -I$(GSL_INCLUDE) -I$(FFTW_INCLUDE) -L$(LIB) -L$(GSL_LIB) -L$(FFTW_LIB) -lKS -lIEKG -lCirc -lGKG -lLB -lRRGW -lNR $(SYSLIBS)
 
 AK_TDI : AK_TDI.cc -lKS -lIEKG -lGKG -lCirc -lLB -lRRGW -lNR Globals.h IEKG.h KSParMap.h KSTools.h AKTDI.h AAKpy.h
-	$(CC) $(EXECSRC)/AK_TDI.cc -o $(BIN)/AK_TDI $(CFLAGS) -I$(INC) -L$(LIB) -lKS -lIEKG -lCirc -lGKG -lLB -lRRGW -lNR $(SYSLIBS)
+	$(CC) $(EXECSRC)/AK_TDI.cc -o $(BIN)/AK_TDI $(CFLAGS) -I$(INC) -I$(GSL_INCLUDE) -I$(FFTW_INCLUDE) -L$(LIB) -L$(GSL_LIB) -L$(FFTW_LIB) -lKS -lIEKG -lCirc -lGKG -lLB -lRRGW -lNR $(SYSLIBS)
 
 AAK_Waveform : AAK_Waveform.cc -lKS -lIEKG -lGKG -lCirc -lLB -lRRGW -lNR Globals.h GKTrajFast.h KSParMap.h KSTools.h AAK.h AAKpy.h
-	$(CC) $(EXECSRC)/AAK_Waveform.cc -o $(BIN)/AAK_Waveform $(CFLAGS) -I$(INC) -L$(LIB) -lKS -lIEKG -lCirc -lGKG -lLB -lRRGW -lNR $(SYSLIBS)
+	$(CC) $(EXECSRC)/AAK_Waveform.cc -o $(BIN)/AAK_Waveform $(CFLAGS) -I$(INC) -I$(GSL_INCLUDE) -I$(FFTW_INCLUDE) -L$(LIB) -L$(GSL_LIB) -L$(FFTW_LIB) -lKS -lIEKG -lCirc -lGKG -lLB -lRRGW -lNR $(SYSLIBS)
 
 AK_Waveform : AK_Waveform.cc -lKS -lIEKG -lGKG -lCirc -lLB -lRRGW -lNR Globals.h IEKG.h KSParMap.h KSTools.h AK.h
-	$(CC) $(EXECSRC)/AK_Waveform.cc -o $(BIN)/AK_Waveform $(CFLAGS) -I$(INC) -L$(LIB) -lKS -lIEKG -lCirc -lGKG -lLB -lRRGW -lNR $(SYSLIBS)
+	$(CC) $(EXECSRC)/AK_Waveform.cc -o $(BIN)/AK_Waveform $(CFLAGS) -I$(INC) -I$(GSL_INCLUDE) -I$(FFTW_INCLUDE) -L$(LIB) -L$(GSL_LIB) -L$(FFTW_LIB) -lKS -lIEKG -lCirc -lGKG -lLB -lRRGW -lNR $(SYSLIBS)
 
 NK_Waveform : NK_Waveform.cc -lKS -lIEKG -lGKG -lCirc -lLB -lRRGW -lNR Globals.h GKInsp.h GKR.h IEKG.h CKG.h Inspiral.h Cosmology.h KSParMap.h KSTools.h DopplerShiftedWaveform.h
-	$(CC) $(EXECSRC)/NK_Waveform.cc -o $(BIN)/NK_Waveform $(CFLAGS) -I$(INC) -L$(LIB) -lKS -lIEKG -lCirc -lGKG -lLB -lRRGW -lNR $(SYSLIBS)
+	$(CC) $(EXECSRC)/NK_Waveform.cc -o $(BIN)/NK_Waveform $(CFLAGS) -I$(INC) -I$(GSL_INCLUDE) -I$(FFTW_INCLUDE) -L$(LIB) -L$(GSL_LIB) -L$(FFTW_LIB) -lKS -lIEKG -lCirc -lGKG -lLB -lRRGW -lNR $(SYSLIBS)
 
 #############################################################################
 
@@ -83,12 +88,12 @@ NROBJS = NRElle.o NREllf.o NREllpi.o NRFactrl.o NRGammln.o NRIndexx.o \
 
 RRGWOBJS = RRGW.o
 
-KSOBJS = AAK.o AAKPhase.o AAKTDI.o AK.o AKTDI.o GKTrajFast.o KSParMap.o KSTools.o AAKpy.o
+KSOBJS = AAK.o AAKPhase.o AAKTDI.o AK.o AKTDI.o GKTrajFast.o KSParMap.o KSTools.o AAKpy.o gpuAAK.o
 
 .INTERMEDIATE : $(CIRCOBJS) $(GKGOBJS) $(IEKGOBJS) $(LBOBJS) $(NROBJS) $(RRGWOBJS) $(KSOBJS)
 
 %.o : %.cc
-	$(CC) $(CFLAGS) -I$(INC) -c $< -o $@
+	$(CC) $(CFLAGS) -I$(INC) -I$(GSL_INCLUDE) -I$(FFTW_INCLUDE) -c $< -o $@
 
 #############################################################################
 
@@ -113,7 +118,7 @@ KSOBJS = AAK.o AAKPhase.o AAKTDI.o AK.o AKTDI.o GKTrajFast.o KSParMap.o KSTools.
 -lRRGW : $(RRGWOBJS) Globals.h RRGW.h SWSH.h
 	$(AR) $(LIB)/libRRGW.a $(RRGWOBJS)
 
--lKS : $(KSOBJS) Globals.h AAK.h AAKPhase.h AAKTDI.h AK.h AKTDI.h GKTrajFast.h KSParMap.h KSTools.h AAKpy.h
+-lKS : $(KSOBJS) Globals.h AAK.h AAKPhase.h AAKTDI.h AK.h AKTDI.h GKTrajFast.h KSParMap.h KSTools.h AAKpy.h gpuAAK.h
 	$(AR) $(LIB)/libKS.a $(KSOBJS)
 
 #############################################################################

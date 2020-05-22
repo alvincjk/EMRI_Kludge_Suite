@@ -4,9 +4,19 @@
 #include <cuComplex.h>
 #include "interpolate.hh"
 #include "Globals.h"
+#include "kernel.hh"
+
+#define NUM_BANKS 16
+#define LOG_NUM_BANKS 4
+#ifdef ZERO_BANK_CONFLICTS
+#define CONFLICT_FREE_OFFSET(n) \
+ ((n) >> NUM_BANKS + (n) >> (2 * LOG_NUM_BANKS))
+#else
+#define CONFLICT_FREE_OFFSET(n) ((n) >> LOG_NUM_BANKS)
+#endif
 
 __device__
-double d_dtdm(double v,double e,double Y,double q){
+double d_d_dtdm(double v,double e,double Y,double q){
   double v2=v*v;
   double v3=v2*v;
   double v4=v2*v2;
@@ -27,7 +37,7 @@ double d_dtdm(double v,double e,double Y,double q){
 }
 
 __device__
-double d_dphidm(double v,double e,double Y,double q){
+double d_d_dphidm(double v,double e,double Y,double q){
   double v2=v*v;
   double v3=v2*v;
   double e2=e*e;
@@ -47,8 +57,8 @@ __device__
 double d_OmegaPhi(double v, double e, double cosiota, double s, double M){
 
   double omegaphi;
-  if(cosiota>0) omegaphi=d_dphidm(v,e,cosiota,s)/d_dtdm(v,e,cosiota,s)/M;
-  else omegaphi=d_dphidm(v,e,-cosiota,-s)/d_dtdm(v,e,-cosiota,-s)/M;
+  if(cosiota>0) omegaphi=d_d_dphidm(v,e,cosiota,s)/d_d_dtdm(v,e,cosiota,s)/M;
+  else omegaphi=d_d_dphidm(v,e,-cosiota,-s)/d_d_dtdm(v,e,-cosiota,-s)/M;
 
   return omegaphi;
 
@@ -116,13 +126,15 @@ void d_RotCoeff(double rot[],double iota,double theta_S,double phi_S,double thet
 __device__
 void find_index_and_xout(int *index, double *x_out, double *x_out2, double *x_out3, double dx, double x_new, double *x_old, int length){
     double x_trans;
-    *index = floor((x_new - x_old[0])/dx);
+    *index = (int)floor(x_new/dx);  // assumes first time is zero
     if (*index >= length - 1) *index = length - 2;
-    x_trans = (x_new - x_old[*index])/(x_old[*index+1] - x_old[*index]);
+    x_trans = (x_new - x_old[*index]);
 
     *x_out = x_trans;
     *x_out2 = x_trans*x_trans;
     *x_out3 = x_trans*x_trans*x_trans;
+
+    //printf("interp %d, %e %e, %e, %e, %e, %e\n", *index, dx, x_old[0], x_new, x_old[*index], x_old[*index+1], x_trans);
 
     /*# if __CUDA_ARCH__>=200
     if (x_new == 1.000100e+06)
@@ -138,6 +150,8 @@ double interpolate_array(InterpArrayContainer array_container, double x, double 
     double coeff_3 = array_container.coeff_3[index];
     double return_val = coeff_0 + coeff_1*x + coeff_2*x2 + coeff_3*x3;
 
+    // printf("interp2 %d, %e, %e %e, %e, %e, %.18e, %.18e, %.18e, %.18e\n", index, return_val, x, x2, x3, x_new, coeff_0, coeff_1, coeff_2, coeff_3);
+
     /*# if __CUDA_ARCH__>=200
     if ((x_new <= 100.0))
         printf("interp2 %d, %e %e, %e, %e, %.18e, %.18e, %.18e, %.18e\n", index, x, x2, x3, x_new, coeff_0, coeff_1, coeff_2, coeff_3);
@@ -146,11 +160,234 @@ double interpolate_array(InterpArrayContainer array_container, double x, double 
     return return_val;
 }
 
+__device__
+double d_dtdm(double v,double e,double Y,double q){
+  double v2=v*v;
+  double v3=v2*v;
+  double v4=v2*v2;
+  double e2=e*e;
+  double e4=e2*e2;
+  double Y2=Y*Y;
+  double q2=q*q;
+  double eq=(2.*e4*(240. + v2*(-120. + v*(42.*(-27. + 4.*q2)*v + (-6567. + 1996.*q2)*v3 +
+              48.*q*(8. + 77.*v2)*Y - 4.*q2*v*(90. + 1577.*v2)*Y2))) +
+     e4*e2*(560. + v2*(-360. + 960.*q*v*Y + 8816.*q*v3*Y +
+           v4*(-15565. + 24.*q2*(200. - 629.*Y2)) +
+           v2*(-2742. + 80.*q2*(5. - 11.*Y2)))) -
+     8.*e2*(-48. + v2*(8. - 64.*q*v*Y - 688.*q*v3*Y +
+           2.*v2*(99. + 16.*q2*(-1. + 2.*Y2)) + v4*(1233. + 8.*q2*(-47. + 150.*Y2))))
+       + 16.*(16. + v2*(24. + v2*(27.*(2. + 5.*v2) - 48.*q*v*Y +
+              4.*q2*(2. - v2 + (-2. + 3.*v2)*Y2)))))/(256.*v4);
+  return eq;
+}
+
+__device__
+double d_drdm(double v,double e,double Y,double q){
+  double v2=v*v;
+  double v3=v2*v;
+  double e2=e*e;
+  double e4=e2*e2;
+  double Y2=Y*Y;
+  double q2=q*q;
+  double eq=(16. + 8.*(-3. + e2)*v2 - 16.*(-3. + e2)*q*v3*Y +
+     8.*(33. + 4.*e2 - 3.*e4)*q*v3*v2*Y +
+     v3*v3*(-351. + 132.*q2 + e2*(-135. + 21.*e2 + 5.*e4 + 2.*(7. + e2)*q2) +
+        2.*(-204. + 13.*e2*(-3. + e2))*q2*Y2) +
+     2.*v2*v2*(-45. + 3.*e4 + 4.*q2*(1. - 4.*Y2) + 2.*e2*q2*(1. + Y2)))/(16.*v);
+  return eq;
+}
+
+__device__
+double d_dthetadm(double v,double e,double Y,double q){
+  double v2=v*v;
+  double v3=v2*v;
+  double e2=e*e;
+  double e4=e2*e2;
+  double Y2=Y*Y;
+  double q2=q*q;
+  double eq=(16. + 8.*(3. + e2)*v2 - 16.*(3. + e2)*q*v3*Y -
+     8.*(3. + e2)*(5. + 3.*e2)*q*v3*v2*Y +
+     v3*v3*(135. - 54.*q2 + e2*(5.*(27. + 9.*e2 + e4) + 2.*(-38. + e2)*q2) +
+        2.*(57. + 90.*e2 + 13.*e4)*q2*Y2) +
+     2.*v2*v2*(27. + 3.*e4 + 2.*q2*(-1. + 7.*Y2) + 2.*e2*(9. + q2*(1. + Y2))))/(16.*v);
+  return eq;
+}
+
+__device__
+double d_dphidm(double v,double e,double Y,double q){
+  double v2=v*v;
+  double v3=v2*v;
+  double e2=e*e;
+  double e4=e2*e2;
+  double Y2=Y*Y;
+  double q2=q*q;
+  double eq=(16. + 8.*(3. + e2)*v2 - 16.*q*v3*(-2. + (3. + e2)*Y) -
+     8.*q*v3*v2*(-6. + 15.*Y + 3.*e4*Y + 2.*e2*(-4. + 7.*Y)) +
+     2.*v2*v2*(27. + 3.*e4 + 2.*q2*(-1. + Y)*(1. + 7.*Y) + 2.*e2*(9. + q2*(1. + Y2))) +
+     v3*v3*(5.*e4*e2 + e4*(45. + q2*(2. + 26.*Y2)) +
+        e2*(135. + 4.*q2*(-19. + 5.*Y*(-7. + 9.*Y))) + 3.*(45. + 2.*q2*(-9. + Y*(-6. + 19.*Y)))))/(16.*v);
+  return eq;
+}
+
 __global__
-void kernel_create_waveform(double *t, double *hI, double *hII, double *tvec, InterpArrayContainer evec, InterpArrayContainer vvec, InterpArrayContainer Mvec, InterpArrayContainer Svec, InterpArrayContainer gimvec, InterpArrayContainer Phivec, InterpArrayContainer alpvec, InterpArrayContainer nuvec, InterpArrayContainer gimdotvec, double lam, double qS, double phiS, double qK, double phiK, bool mich, int init_length, int vlength,int nmodes, int i_plunge, int i_buffer, double zeta, double M_phys, double init_dt, double timestep){
+void produce_phasing(double *e_out, double *v_out, double *M_out, double *S_out, double *gimdot_out, double *nu_out, double *alpdot_out,
+                    double *gim_out, double *Phi_out, double *alp_out,
+                     double *tvec, InterpArrayContainer evec, InterpArrayContainer vvec, InterpArrayContainer Mvec, InterpArrayContainer Svec,
+                            double lam,
+                            int init_length,
+                             double init_dt, double timestep, double t_clip, int run_length)
+{
+
+    int index;
+    double x, x2, x3;
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+
+    double t = timestep*i;
+
+    if (t > t_clip) return;
+
+    double tm = timestep*(i-1);
+    if (i==0) tm = t;
+
+    double coslam=cos(lam);
+    double sinlam=sin(lam);
+
+    find_index_and_xout(&index, &x, &x2, &x3, init_dt, tm, tvec, init_length);
+
+    double e=interpolate_array(evec, x, x2, x3, index, timestep*i); //evec.array[i];
+    double v=interpolate_array(vvec, x, x2, x3, index, timestep*i); //vvec.array[i];
+    double M=interpolate_array(Mvec, x, x2, x3, index, timestep*i); //Mvec.array[i];
+    double S=interpolate_array(Svec, x, x2, x3, index, timestep*i); //Svec.array[i];
+
+    double gimdotm=(d_dthetadm(v,e,coslam,S)-d_drdm(v,e,coslam,S))/d_dtdm(v,e,coslam,S)/M;
+    double Phidotm=d_drdm(v,e,coslam,S)/d_dtdm(v,e,coslam,S)/M;
+    double alpdotm=(d_dphidm(v,e,coslam,S)-d_dthetadm(v,e,coslam,S))/d_dtdm(v,e,coslam,S)/M;
+
+    find_index_and_xout(&index, &x, &x2, &x3, init_dt, t, tvec, init_length);
+
+    e=interpolate_array(evec, x, x2, x3, index, timestep*i); //evec.array[i];
+    v=interpolate_array(vvec, x, x2, x3, index, timestep*i); //vvec.array[i];
+    M=interpolate_array(Mvec, x, x2, x3, index, timestep*i); //Mvec.array[i];
+    S=interpolate_array(Svec, x, x2, x3, index, timestep*i); //Svec.array[i];
+
+    double gimdot=(d_dthetadm(v,e,coslam,S)-d_drdm(v,e,coslam,S))/d_dtdm(v,e,coslam,S)/M;
+    double Phidot=d_drdm(v,e,coslam,S)/d_dtdm(v,e,coslam,S)/M;
+    double alpdot=(d_dphidm(v,e,coslam,S)-d_dthetadm(v,e,coslam,S))/d_dtdm(v,e,coslam,S)/M;
+
+    //double nu=Phidot/2./M_PI;
+
+    e_out[i] = e;
+    v_out[i] = v;
+    M_out[i] = M;
+    S_out[i] = S;
+    gimdot_out[i] = gimdot;
+    nu_out[i] = Phidot/2./M_PI;;
+    alpdot_out[i] = alpdot;
+
+    if (i >= run_length-1) return;
+    gim_out[i+1] = (1.5*gimdot-.5*gimdotm)*timestep;
+    Phi_out[i+1] = (1.5*Phidot-.5*Phidotm)*timestep;
+    alp_out[i+1] = (1.5*alpdot-.5*alpdotm)*timestep;
+
+    //double nu=Phidot/2./M_PI;
+
+}
+
+__global__ void prescan0(double *arr, double arr0, double *temp)
+{
+    *arr = arr0;
+    *temp = 0.0;
+}
+
+
+
+__global__ void prescan1(double *g_idata, int n, double *temp, int num_sum_per_thread)
+{
+    int start_ind = (blockIdx.x*blockDim.x + threadIdx.x)*num_sum_per_thread;
+    if (start_ind >= n) return;
+    int end_ind = start_ind + num_sum_per_thread - 1;
+    if (end_ind >= n) end_ind = n-1;
+
+    for(int i=start_ind; i<end_ind; i++) g_idata[i+1]+=g_idata[i];
+    int temp_ind = start_ind / num_sum_per_thread + 1;
+    temp[temp_ind] = g_idata[end_ind];
+}
+
+__global__ void prescan2(int n, double *temp, int num_sum_per_thread)
+{
+    for(int i=0; i<n-1; i++) temp[i+1] += temp[i];
+}
+
+__global__ void prescan3(double *g_idata, int n, double *temp, int num_sum_per_thread)
+{
+    for(int i = blockIdx.x*blockDim.x + threadIdx.x;
+        i<n;
+        i += blockDim.x*gridDim.x){
+            int temp_ind = i / num_sum_per_thread;
+            g_idata[i] += temp[temp_ind];
+        }
+}
+
+#define gpuErrchk_kern(ans) { gpuAssert_kern((ans), __FILE__, __LINE__); }
+inline void gpuAssert_kern(cudaError_t code, const char *file, int line, bool abort=true)
+{
+   if (code != cudaSuccess)
+   {
+      fprintf(stderr,"GPUassert: %s %s %d\n", cudaGetErrorString(code), file, line);
+      if (abort) exit(code);
+   }
+}
+
+void cumsum(double *data, double phase0, int n){
+    int num_sum_per_thread = 256;
+    int NUM_THREADS = 256;
+    int num_needed_threads = std::ceil(n/num_sum_per_thread);
+    int num_blocks_prescan1 = std::ceil((num_needed_threads + 1 + NUM_THREADS -1)/NUM_THREADS);
+
+    double *temp;
+    gpuErrchk_kern(cudaMalloc(&temp, (num_needed_threads+1)*sizeof(double)));
+
+
+    prescan0<<<1,1>>>(data, phase0, temp);
+    cudaDeviceSynchronize();
+    gpuErrchk_kern(cudaGetLastError());
+
+    prescan1<<<num_blocks_prescan1, NUM_THREADS>>>(data, n, temp, num_sum_per_thread);
+    cudaDeviceSynchronize();
+    gpuErrchk_kern(cudaGetLastError());
+
+    prescan2<<<1,1>>>(num_needed_threads+1, temp, num_sum_per_thread);
+    cudaDeviceSynchronize();
+    gpuErrchk_kern(cudaGetLastError());
+
+    int num_blocks_prescan3 = std::ceil((n + 1 + NUM_THREADS -1)/NUM_THREADS);
+    prescan3<<<num_blocks_prescan3, NUM_THREADS>>>(data, n, temp, num_sum_per_thread);
+    cudaDeviceSynchronize();
+    gpuErrchk_kern(cudaGetLastError());
+
+    gpuErrchk_kern(cudaFree(temp));
+
+}
+
+
+__global__
+void kernel_create_waveform(double *t, double *hI, double *hII,
+                            double *tvec, double *evec, double *vvec, double *Mvec, double *Svec,
+                            double *gimvec, double *Phivec, double *alpvec,
+                            double *nuvec, double *gimdotvec, double lam,
+                            double qS, double phiS, double qK, double phiK,
+                            bool mich, int init_length, int vlength,int nmodes,
+                            int i_plunge, int i_buffer, double zeta, double M_phys,
+                            double init_dt, double timestep, int run_length){
 
     int i = blockIdx.x * blockDim.x + threadIdx.x;
+
     if (i >= vlength) return;
+    if (i >= run_length) {
+        hI[i] = 0.0;
+        hII[i] = 0.0;
+        return;
+    }
 
   // ----------  // TODO: calculate this first section before gpu
   double coslam=cos(lam);
@@ -164,28 +401,25 @@ void kernel_create_waveform(double *t, double *hI, double *hII, double *tvec, In
   double halfsqrt3=sqrt(3.)/2.;
   // ----- compute waveform from t_start to t_end -----
   //for(int i=0;i<vlength;i++){
-  int index;
-  double x, x2, x3;
   double time = timestep*i;
   t[i]= time;
-  double t_plunge=tvec[i_plunge];
+  double t_plunge=i_plunge*timestep;
   double t_zero=t_plunge+timestep*i_buffer;
+
   if (time <=t_zero){
 
     hI[i]=0.;
     hII[i]=0.;
 
-    find_index_and_xout(&index, &x, &x2, &x3, init_dt, timestep*i, tvec, init_length);
-
-    double e=interpolate_array(evec, x, x2, x3, index, timestep*i); //evec.array[i];
-    double v=interpolate_array(vvec, x, x2, x3, index, timestep*i); //vvec.array[i];
-    double M=interpolate_array(Mvec, x, x2, x3, index, timestep*i); //Mvec.array[i];
-    double S=interpolate_array(Svec, x, x2, x3, index, timestep*i); //Svec.array[i];
-    double gim=interpolate_array(gimvec, x, x2, x3, index, timestep*i); //gimvec.array[i];
-    double Phi=interpolate_array(Phivec, x, x2, x3, index, timestep*i); //Phivec.array[i];
-    double alp=interpolate_array(alpvec, x, x2, x3, index, timestep*i); //alpvec.array[i];
-    double nu=interpolate_array(nuvec, x, x2, x3, index, timestep*i); //nuvec.array[i];
-    double gimdot=interpolate_array(gimdotvec, x, x2, x3, index, timestep*i); //gimdotvec.array[i];
+    double e=evec[i]; //evec.array[i];
+    double v=vvec[i]; //vvec.array[i];
+    double M=Mvec[i]; //Mvec.array[i];
+    double S=Svec[i]; //Svec.array[i];
+    double gim=gimvec[i]; //gimvec.array[i];
+    double Phi=Phivec[i]; //Phivec.array[i];
+    double alp=alpvec[i]; //alpvec.array[i];
+    double nu=nuvec[i]; //nuvec.array[i];
+    double gimdot=gimdotvec[i]; //gimdotvec.array[i];
 
     /*# if __CUDA_ARCH__>=200
     //if ((index >= 12000) && (index <= 12100))
@@ -212,9 +446,11 @@ void kernel_create_waveform(double *t, double *hI, double *hII, double *tvec, In
 
     double orbphs,cosorbphs,sinorbphs,FplusI,FcrosI,FplusII,FcrosII;
     if(mich){
+
       orbphs=2.*M_PI*t[i]/year;
       cosorbphs=cos(orbphs-phiS);
       sinorbphs=sin(orbphs-phiS);
+
       double cosq=.5*cosqS-halfsqrt3*sinqS*cosorbphs;
       double phiw=orbphs+atan2(halfsqrt3*cosqS+.5*sinqS*cosorbphs,sinqS*sinorbphs);
       double psiup=.5*cosqK-halfsqrt3*sinqK*cos(orbphs-phiK)-cosq*(cosqK*cosqS+sinqK*sinqS*cos(phiK-phiS));
@@ -225,10 +461,12 @@ void kernel_create_waveform(double *t, double *hI, double *hII, double *tvec, In
       double sin2phi=sin(2.*phiw);
       double cos2psi=cos(2.*psi);
       double sin2psi=sin(2.*psi);
+
       FplusI=cosq1*cos2phi*cos2psi-cosq*sin2phi*sin2psi;
       FcrosI=cosq1*cos2phi*sin2psi+cosq*sin2phi*cos2psi;
       FplusII=cosq1*sin2phi*cos2psi+cosq*cos2phi*sin2psi;
       FcrosII=cosq1*sin2phi*sin2psi-cosq*cos2phi*cos2psi;
+
     }
     else{
       FplusI=1.;
@@ -238,6 +476,7 @@ void kernel_create_waveform(double *t, double *hI, double *hII, double *tvec, In
     }
 
     double Amp=pow(d_OmegaPhi(v,e,coslam,S,M)*M_phys*SOLARMASSINSEC,2./3.)*zeta;
+
     // TODO: check making num modes to gridDim (then need to do reduction to get singular waveform)
     double fn,Doppler,nPhi;
     double ne, a, b, c, Aplus, Acros, Aplusold, Acrosold;
@@ -314,7 +553,6 @@ void kernel_create_waveform(double *t, double *hI, double *hII, double *tvec, In
   #endif //*/
 
 }
-
 
 __global__
 void likelihood_prep(cuDoubleComplex *template_channel1, cuDoubleComplex *template_channel2, double *noise_channel1_inv, double *noise_channel2_inv, int length){

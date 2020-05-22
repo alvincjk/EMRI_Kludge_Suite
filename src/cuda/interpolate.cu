@@ -42,9 +42,10 @@ InterpArrayContainer * createInterpArrayContainer(size_t *numBytes, int num_arr,
     //cudaMalloc((void**)&gpu_array_container, *numBytes);
 }
 
-InterpArrayContainer * createInterpArrayContainer_gpu(size_t numBytes){
+InterpArrayContainer * createInterpArrayContainer_gpu(size_t numBytes, InterpArrayContainer *cpu_array_container){
     InterpArrayContainer *gpu_array_container;
     cudaMalloc((void**)&gpu_array_container, numBytes);
+    cudaMemcpy(gpu_array_container, cpu_array_container, numBytes, cudaMemcpyHostToDevice);
     return gpu_array_container;
 }
 
@@ -61,51 +62,6 @@ void destroyInterpArrayContainer(InterpArrayContainer * gpu_array_container, Int
 }
 
 
-__global__
-void fill_B(InterpArrayContainer *arr_container, double *B, int length_per_arr, int num_arr){
-    int i = blockIdx.x * blockDim.x + threadIdx.x;
-    int j = blockIdx.y;
-    if (j >= num_arr) return;
-    if (i >= length_per_arr) return;
-
-            if (i == length_per_arr - 1){
-                B[j*length_per_arr + i] = 3.0* (arr_container[j].array[i] - arr_container[j].array[(i-1)]);
-
-            } else if (i == 0){
-                B[j*length_per_arr + i] = 3.0* (arr_container[j].array[1] - arr_container[j].array[0]);
-
-            } else{
-                B[j*length_per_arr + i] = 3.0* (arr_container[j].array[(i+1)] - arr_container[j].array[(i-1)]);
-            }
-        /*# if __CUDA_ARCH__>=200
-        if ((i < 100) && (j ==8))
-            printf("%d %d, %.18e, %.18e, %.18e, %.18e\n", i, j, B[j*length_per_arr + i], arr_container[j].array[i+1], arr_container[j].array[i], arr_container[j].array[i-1]);
-        #endif //*/
-}
-
-__global__
-void set_spline_constants(InterpArrayContainer *arr_container, double *B, int length_per_arr, int num_arr){
-    double D_i, D_ip1, y_i, y_ip1;
-    int i = blockIdx.x * blockDim.x + threadIdx.x;
-    int j = blockIdx.y;
-    if (j >= num_arr) return;
-    if (i >= length_per_arr) return;
-
-            D_i = B[(j*length_per_arr) + i];
-            D_ip1 = B[(j*length_per_arr) + i + 1];
-            y_i = arr_container[j].array[i];
-            y_ip1 = arr_container[j].array[i+1];
-            arr_container[j].coeff_1[i] = D_i;
-            arr_container[j].coeff_2[i] = 3.0 * (y_ip1 - y_i) - 2.0*D_i - D_ip1;
-            arr_container[j].coeff_3[i] = 2.0 * (y_i - y_ip1) + D_i + D_ip1;
-
-            /*# if __CUDA_ARCH__>=200
-            if ((i % 2000 == 0) && (j == 3))
-                printf("%d, %.18e, %.18e, %.18e, %.18e, %.18e, %.18e, %.18e, %.18e \n", i, B[(j*length_per_arr) + i], B[(j*length_per_arr) + i+1], arr_container[j].array[i], arr_container[j].array[i], arr_container[j].array[i+1], arr_container[j].coeff_1[i], arr_container[j].coeff_2[i], arr_container[j].coeff_3[i]);
-            #endif //*/
-}
-
-
 
 Interpolate::Interpolate(){
     int pass = 0;
@@ -114,57 +70,169 @@ Interpolate::Interpolate(){
 __host__
 void Interpolate::alloc_arrays(int max_length_init, int num_arr){
     gpuErrchk_here(cudaMalloc(&d_B, max_length_init*num_arr*sizeof(double)));
-    gpuErrchk_here(cudaMalloc(&d_dl, max_length_init*sizeof(double)));
-    gpuErrchk_here(cudaMalloc(&d_d, max_length_init*sizeof(double)));
-    gpuErrchk_here(cudaMalloc(&d_du, max_length_init*sizeof(double)));
+    gpuErrchk_here(cudaMalloc(&d_dl, max_length_init*num_arr*sizeof(double)));
+    gpuErrchk_here(cudaMalloc(&d_d, max_length_init*num_arr*sizeof(double)));
+    gpuErrchk_here(cudaMalloc(&d_du, max_length_init*num_arr*sizeof(double)));
+}
+
+__device__ void prep_splines(int i, int length, double *b, double *ud, double *diag, double *ld, double *x, double *y){
+  double dx1, dx2, d, slope1, slope2;
+  if (i == length - 1){
+    dx1 = x[length - 2] - x[length - 3];
+    dx2 = x[length - 1] - x[length - 2];
+    d = x[length - 1] - x[length - 3];
+
+    slope1 = (y[length - 2] - y[length - 3])/dx1;
+    slope2 = (y[length - 1] - y[length - 2])/dx2;
+
+    b[length - 1] = ((dx2*dx2*slope1 +
+                             (2*d + dx2)*dx1*slope2) / d);
+    diag[length - 1] = dx1;
+    ld[length - 1] = d;
+    ud[length - 1] = 0.0;
+
+  } else if (i == 0){
+      dx1 = x[1] - x[0];
+      dx2 = x[2] - x[1];
+      d = x[2] - x[0];
+
+      //amp
+      slope1 = (y[1] - y[0])/dx1;
+      slope2 = (y[2] - y[1])/dx2;
+
+      b[0] = ((dx1 + 2*d) * dx2 * slope1 +
+                          dx1*dx1 * slope2) / d;
+      diag[0] = dx2;
+      ud[0] = d;
+      ld[0] = 0.0;
+
+  } else{
+    dx1 = x[i] - x[i-1];
+    dx2 = x[i+1] - x[i];
+
+    //amp
+    slope1 = (y[i] - y[i-1])/dx1;
+    slope2 = (y[i+1] - y[i])/dx2;
+
+    b[i] = 3.0* (dx2*slope1 + dx1*slope2);
+    diag[i] = 2*(dx1 + dx2);
+    ud[i] = dx1;
+    ld[i] = dx2;
+  }
+}
+
+/*
+fill the B array on the GPU for response transfer functions.
+*/
+
+__device__
+void fill_B(InterpArrayContainer *array_container, double *B, double *tvals, double *upper_diag, double *diag, double *lower_diag, int length, int num_splines, int spline_i, int i){
+    int num_pars = 8;
+    int lead_ind;
+
+    // phaseRdelay
+    lead_ind = spline_i*length;
+    prep_splines(i, length, &B[lead_ind], &upper_diag[lead_ind], &diag[lead_ind], &lower_diag[lead_ind], tvals, array_container[spline_i].array);
 }
 
 __global__
-void setup_d_vals(double *dl, double *d, double *du, int current_length){
-    int i = blockIdx.x * blockDim.x + threadIdx.x;
-    if (i >= current_length) return;
-    if (i == 0){
-        dl[0] = 0.0;
-        d[0] = 2.0;
-        du[0] = 1.0;
-    } else if (i == current_length - 1){
-        dl[current_length-1] = 1.0;
-        d[current_length-1] = 2.0;
-        du[current_length-1] = 0.0;
-    } else{
-        dl[i] = 1.0;
-        d[i] = 4.0;
-        du[i] = 1.0;
-    }
-    # /*if __CUDA_ARCH__>=200
-    if ((i == 0) || (i == current_length-1) || (i == 10))
-        printf("%d, %e, %e, %e \n", i, dl[i], d[i], du[i]);
-    #endif //*/
+void fill_B_wrap(InterpArrayContainer *array_container, double *tvals, double *B, double *upper_diag, double *diag, double *lower_diag, int length, int num_splines){
+    for (int spline_i = blockIdx.y * blockDim.y + threadIdx.y;
+         spline_i < num_splines;
+         spline_i += blockDim.y * gridDim.y){
+
+       for (int i = blockIdx.x * blockDim.x + threadIdx.x;
+            i < length;
+            i += blockDim.x * gridDim.x){
+
+              fill_B(array_container, B, tvals, upper_diag, diag, lower_diag, length, num_splines, spline_i, i);
+
+}
+}
 }
 
-/*__device__
-void find_index_and_xout(int *index, double *x_out, double dx, double x_new, double *x_old, int length){
-    *index = floor((x_new - x_old[0])/dx);
-    if (*index >= length - 1) *index = length - 2;
-    *x_out = (x_new - x_old[*index])/(x_old[*index+1] - x_old[*index]);
-}
 
 __device__
-double interpolate_array(InterpArrayContainer array_container, double x, int index){
-    double coeff_0 = array_container.array[index];
-    double coeff_1 = array_container.coeff_1[index];
-    double coeff_2 = array_container.coeff_2[index];
-    double coeff_3 = array_container.coeff_3[index];
-    double x2 = x*x;
-    double x3 = x*x2;
-    double return_val = coeff_0 + coeff_1*x + coeff_2*x2 + coeff_3*x3;
-    return return_val;
-}//*/
+void fill_coefficients(int i, int length, double *dydx, double dx, double *y, double *coeff1, double *coeff2, double *coeff3){
+  double slope, t, dydx_i;
 
-void Interpolate::setup(InterpArrayContainer *array_container, int m_, int n_){
+  slope = (y[i+1] - y[i])/dx;
+
+  dydx_i = dydx[i];
+
+  t = (dydx_i + dydx[i+1] - 2*slope)/dx;
+
+  coeff1[i] = dydx_i;
+  coeff2[i] = (slope - dydx_i) / dx - t;
+  coeff3[i] = t/dx;
+}
+
+/*
+find spline constants based on matrix solution for response transfer functions.
+*/
+__device__
+void set_spline_constants(InterpArrayContainer *array_container, double *B, int length, int num_splines, int spline_i, int i, double dt){
+
+    int lead_ind;
+
+    // phaseRdelay
+    lead_ind = spline_i*length;
+    fill_coefficients(i, length, &B[lead_ind], dt, array_container[spline_i].array, array_container[spline_i].coeff_1, array_container[spline_i].coeff_2, array_container[spline_i].coeff_3);
+
+}
+
+__global__
+void set_spline_constants_wrap(InterpArrayContainer *array_container, double *B, int length, int num_splines, double *tvals){
+    int num_pars = 8;
+    int spline_index;
+    double dt;
+
+    for (int spline_i = blockIdx.y * blockDim.y + threadIdx.y;
+         spline_i < num_splines;
+         spline_i += blockDim.y * gridDim.y){
+
+       for (int i = blockIdx.x * blockDim.x + threadIdx.x;
+            i < length-1;
+            i += blockDim.x * gridDim.x){
+
+              dt = tvals[i + 1] - tvals[i];
+              set_spline_constants(array_container, B, length, num_splines, spline_i, i, dt);
+  }
+  }
+}
+
+void fit_constants_serial_wrap(int m, int n, double *a, double *b, double *c, double *d_in){
+
+  void *pBuffer;
+  cusparseStatus_t stat;
+  cusparseHandle_t handle;
+
+  size_t bufferSizeInBytes;
+
+  CUSPARSE_CALL(cusparseCreate(&handle));
+  CUSPARSE_CALL( cusparseDgtsv2StridedBatch_bufferSizeExt(handle, m, a, b, c, d_in, n, m, &bufferSizeInBytes));
+  gpuErrchk_here(cudaMalloc(&pBuffer, bufferSizeInBytes));
+
+    CUSPARSE_CALL(cusparseDgtsv2StridedBatch(handle,
+                                              m,
+                                              a, // dl
+                                              b, //diag
+                                              c, // du
+                                              d_in,
+                                              n,
+                                              m,
+                                              pBuffer));
+
+
+CUSPARSE_CALL(cusparseDestroy(handle));
+gpuErrchk_here(cudaFree(pBuffer));
+}
+
+
+void Interpolate::setup(InterpArrayContainer *array_container, double *d_tvec, int m_, int n_){
+
     m = m_;
     n = n_;
-
 
     int NUM_THREADS = 256;
 
@@ -172,33 +240,15 @@ void Interpolate::setup(InterpArrayContainer *array_container, int m_, int n_){
 
     dim3 interpGrid(num_blocks, n);
 
-    setup_d_vals<<<num_blocks, NUM_THREADS>>>(d_dl, d_d, d_du, m);
+    fill_B_wrap<<<interpGrid, NUM_THREADS>>>(array_container, d_tvec, d_B, d_du, d_d, d_dl, m, n);
     cudaDeviceSynchronize();
     gpuErrchk_here(cudaGetLastError());
 
-    fill_B<<<interpGrid, NUM_THREADS>>>(array_container, d_B, m, n);
+    fit_constants_serial_wrap(m, n, d_dl, d_d, d_du, d_B);
+
+    set_spline_constants_wrap<<<interpGrid, NUM_THREADS>>>(array_container, d_B, m, n, d_tvec);
     cudaDeviceSynchronize();
     gpuErrchk_here(cudaGetLastError());
-
-    /*cudaMemcpy(checker, d_B, m*n*sizeof(double), cudaMemcpyDeviceToHost);
-    for (int i=0; i<n; i++){
-        for (int j=0; j<m; j+=100){
-            printf("%d %d, %e\n", i, j, checker[i*m + j]);
-        }
-    }//*/
-
-    double *checker = new double[m*n];
-
-    CUSPARSE_CALL( cusparseCreate(&handle) );
-    cusparseStatus_t status = cusparseDgtsv_nopivot(handle, m, n, d_dl, d_d, d_du, d_B, m);
-    if (status !=  CUSPARSE_STATUS_SUCCESS) assert(0);
-    cusparseDestroy(handle);
-
-    set_spline_constants<<<interpGrid, NUM_THREADS>>>(array_container, d_B, m, n);
-    cudaDeviceSynchronize();
-    gpuErrchk_here(cudaGetLastError());
-
-    delete[] checker;
 }
 
 __host__ Interpolate::~Interpolate(){
