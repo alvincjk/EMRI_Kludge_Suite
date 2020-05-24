@@ -124,6 +124,9 @@ try:
 except OSError:
     run_cuda = False
 
+except EnvironmentError:  # for python <3.3
+    run_cuda = False
+
 
 # Obtain the numpy include directory. This logic works across numpy versions.
 try:
