@@ -1,14 +1,12 @@
-# EMRI Kludge Suite
+# EMRI Kludge Suite (DISCONTINUED)
 
 **Version 0.5.2**
 
 This is a C/C++ suite that allows kludge waveforms for extreme-mass-ratio inspirals (EMRIs) to be generated with shared settings and parameters. The three waveforms included in the suite are the augmented analytic kludge (AAK) [1,2], the analytic kludge (AK) [3], and the numerical kludge (NK) [4]. EMRI Kludge Suite is part of the Black Hole Perturbation Toolkit; visit http://bhptoolkit.org for more information.
 
-NEW IN VERSION 0.5.0: GPU implementation of AAK waveform and LISA noise-weighted inner product.
+EMRI Kludge Suite is no longer being maintained. Active development has shifted to the next-generation framework at https://bhptoolkit.org/FastEMRIWaveforms, which includes an improved 5PN version of the AAK waveform.
 
-Please check https://github.com/alvincjk/EMRI_Kludge_Suite for any version updates.
-
-&mdash; Alvin Chua, Jan 2020
+&mdash; Alvin Chua, Jan 2021
 
 ## Installation
 
